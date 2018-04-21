@@ -48,11 +48,11 @@ namespace haros
   {
   public:
     MessageEvent();
-    MessageEvent(const uint32_t time, const boost::shared_ptr<void> data);
+    MessageEvent(const ros::Time time, const boost::shared_ptr<void> data);
 
     template<class M>
     boost::shared_ptr<M> msg();
-    // return boost::static_pointer_cast<M>(data_);
+    // return msg_.instantiate<M>();
 
     bool hasOccurred();
 
@@ -61,11 +61,9 @@ namespace haros
     bool operator == (const MessageEvent& me) const;
 
   private:
-    uint32_t time_;
-    boost::shared_ptr<void const> data_;
+    ros::Time time_;
+    topic_tools::ShapeShifter::ConstPtr msg_;
   };
-
-  typedef MessageEventPtr boost::shared_ptr<MessageEvent>;
 } // namespace haros
 
 #endif // HAROS_ASSERT_MESSAGE_EVENT_H

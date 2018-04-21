@@ -90,7 +90,7 @@ namespace haros
       // ops.topic is changed to the fully resolved topic
       // bind makes a copy of the topic string, so it is safe to use it
       ros::Subscriber helper = ros::NodeHandle::subscribe(ops.topic, ops.queue_size,
-          boost::bind(&History::receive<>, boost::ref(History::instance), ops.topic, _1));
+          boost::bind(&History::receive<>, , ops.topic, _1));
       // cannot subscribe like the above, because we have no information of the msg type
       // must subscribe the same way rosbag does it
       ros::SubscribeOptions history_ops;
@@ -100,7 +100,7 @@ namespace haros
       history_ops.datatype = ros::message_traits::datatype<topic_tools::ShapeShifter>();
       history_ops.helper = boost::make_shared<ros::SubscriptionCallbackHelperT<
           const ros::MessageEvent<topic_tools::ShapeShifter const> &> >(
-              boost::bind(&Recorder::doQueue, this, _1, topic, sub, count));
+              boost::bind(&History::receive, boost::ref(History::instance), ops.topic, _1));
       // we may not need ros::MessageEvent right now
       // it will be useful if we resort to using ros::Time instead of int clocks
       // relevant:

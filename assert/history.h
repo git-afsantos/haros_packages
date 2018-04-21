@@ -70,7 +70,7 @@ namespace haros
     struct Entry
     {
       std::string topic_;                   // registered topic
-      uint32_t time_;                       // time of the last event
+      ros::Time time_;                      // time of the last event
       boost::shared_ptr<void const> msg_;   // last message
 
       Entry(const std::string& topic);
@@ -78,7 +78,6 @@ namespace haros
       
     };
 
-    uint32_t clock_;
     std::map<std::string, MessageEventPtr> received_;
     boost::mutex mutex_;
   };
