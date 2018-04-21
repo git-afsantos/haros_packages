@@ -40,6 +40,10 @@
 
 namespace haros
 {
+  /** This is supposed to be a very lightweight object. It is basically a pair
+   * of a clock and a (shared) pointer to a message. Thus, it can be copyable.
+   * Can also be stored directly, instead of storing a pointer.
+   */
   class MessageEvent
   {
   public:
@@ -52,18 +56,13 @@ namespace haros
 
     bool hasOccurred();
 
-    bool isMostRecent();
-
     bool operator < (const MessageEvent& me) const;
     bool operator > (const MessageEvent& me) const;
     bool operator == (const MessageEvent& me) const;
 
-    void outdate();
-
   private:
     uint32_t time_;
-    bool latest_;
-    boost::shared_ptr<void> data_;
+    boost::shared_ptr<void const> data_;
   };
 
   typedef MessageEventPtr boost::shared_ptr<MessageEvent>;

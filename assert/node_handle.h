@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <string>
 
+#include <boost/core/ref.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 
@@ -87,7 +88,24 @@ namespace haros
     {
       Subscriber sub(ros::NodeHandle::subscribe(ops));
       // ops.topic is changed to the fully resolved topic
-      ros::Subscriber helper = ros::NodeHandle::subscribe(ops.topic, ops.queue_size, &Subscriber::callback, &);
+      // bind makes a copy of the topic string, so it is safe to use it
+      ros::Subscriber helper = ros::NodeHandle::subscribe(ops.topic, ops.queue_size,
+          boost::bind(&History::receive<>, boost::ref(History::instance), ops.topic, _1));
+      // cannot subscribe like the above, because we have no information of the msg type
+      // must subscribe the same way rosbag does it
+      ros::SubscribeOptions history_ops;
+      history_ops.topic = ops.topic;
+      history_ops.queue_size = ops.queue_size;
+      history_ops.md5sum = ros::message_traits::md5sum<topic_tools::ShapeShifter>();
+      history_ops.datatype = ros::message_traits::datatype<topic_tools::ShapeShifter>();
+      history_ops.helper = boost::make_shared<ros::SubscriptionCallbackHelperT<
+          const ros::MessageEvent<topic_tools::ShapeShifter const> &> >(
+              boost::bind(&Recorder::doQueue, this, _1, topic, sub, count));
+      // we may not need ros::MessageEvent right now
+      // it will be useful if we resort to using ros::Time instead of int clocks
+      // relevant:
+      // https://answers.ros.org/question/273964/using-shapeshifter-messageevent-and-boost-bind-together-to-pass-arguments-to-callback/
+      // http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#MessageEvent_.5BROS_1.1.2B-.5D
       
       
         // consider creating regular ros::Subscriber and defining a subclass of it

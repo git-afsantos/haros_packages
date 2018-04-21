@@ -43,6 +43,11 @@
 
 namespace haros
 {
+  /** History will remain alive for the program duration, since everything else is
+   * non-unique and/or temporary (NodeHandle, Subscriber, Publisher).
+   * Since History is shared across multiple threads, it has to
+   * implement concurrency control.
+   */
   class History
   {
   public:
@@ -51,14 +56,31 @@ namespace haros
 
     MessageEvent lastReceive(const std::string& topic);
 
-    template<class M>
-    void receive(const std::string& topic, const M::ConstPtr& msg);
+    void receive(const std::string& topic,
+                 const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event);
+    // msg_event.getMessage() is of type topic_tools::ShapeShifter::ConstPtr
 
   private:
     History();
 
+    /** An Entry has to be allocated on the heap.
+     *  It must stay alive for as long as History, since it will be
+     *  the tracked object for the history callback.
+     */
+    struct Entry
+    {
+      std::string topic_;                   // registered topic
+      uint32_t time_;                       // time of the last event
+      boost::shared_ptr<void const> msg_;   // last message
+
+      Entry(const std::string& topic);
+
+      
+    };
+
     uint32_t clock_;
     std::map<std::string, MessageEventPtr> received_;
+    boost::mutex mutex_;
   };
 } // namespace haros
 
