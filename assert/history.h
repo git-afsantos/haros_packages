@@ -56,6 +56,27 @@ namespace haros
 
     MessageEvent lastReceive(const std::string& topic);
 
+    boost::shared_ptr<ros::Subscriber> subscribe(const std::string& topic,
+                                                 const uint32_t queue_size);
+    {
+      boost::mutex::scoped_lock lock(mutex_);
+      boost::shared_ptr<ros::Subscriber> sub;
+      std::map<std::string, Entry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        Entry e = it->second;
+        sub = e.sub_.lock();
+        if (boost::shared_ptr<ros::Subscriber> )
+      
+        sub.reset();
+        return boost::shared_ptr<ros::Subscriber>();
+      }
+      else
+      {
+        ros::NodeHandle nh;
+      }
+    }
+
     void receive(const std::string& topic,
                  const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event);
     // msg_event.getMessage() is of type topic_tools::ShapeShifter::ConstPtr
@@ -69,16 +90,16 @@ namespace haros
      */
     struct Entry
     {
-      std::string topic_;                   // registered topic
-      ros::Time time_;                      // time of the last event
-      boost::shared_ptr<void const> msg_;   // last message
+      boost::weak_ptr<ros::Subscriber> sub_;
+      ros::Time time_;
+      topic_tools::ShapeShifter::ConstPtr msg_;
 
-      Entry(const std::string& topic);
-
-      
+      Entry(const boost::shared_ptr<ros::Subscriber>& sub)
+      : sub_(boost::weak_ptr<ros::Subscriber>(sub))
+      {}
     };
 
-    std::map<std::string, MessageEventPtr> received_;
+    std::map<std::string, Entry> received_;
     boost::mutex mutex_;
   };
 } // namespace haros
