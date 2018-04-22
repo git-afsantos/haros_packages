@@ -39,6 +39,14 @@
 #include <string>
 #include <map>
 
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/thread/mutex.hpp>
+
+#include <ros/ros.h>
+
+#include <topic_tools/shape_shifter.h>
+
 #include "message_event.h"
 
 namespace haros
@@ -58,31 +66,13 @@ namespace haros
 
     boost::shared_ptr<ros::Subscriber> subscribe(const std::string& topic,
                                                  const uint32_t queue_size);
-    {
-      boost::mutex::scoped_lock lock(mutex_);
-      boost::shared_ptr<ros::Subscriber> sub;
-      std::map<std::string, Entry>::iterator it = received_.find(topic);
-      if (it != received_.end())
-      {
-        Entry e = it->second;
-        sub = e.sub_.lock();
-        if (boost::shared_ptr<ros::Subscriber> )
-      
-        sub.reset();
-        return boost::shared_ptr<ros::Subscriber>();
-      }
-      else
-      {
-        ros::NodeHandle nh;
-      }
-    }
+
+  private:
+    History();
 
     void receive(const std::string& topic,
                  const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event);
     // msg_event.getMessage() is of type topic_tools::ShapeShifter::ConstPtr
-
-  private:
-    History();
 
     /** An Entry has to be allocated on the heap.
      *  It must stay alive for as long as History, since it will be
@@ -93,14 +83,10 @@ namespace haros
       boost::weak_ptr<ros::Subscriber> sub_;
       ros::Time time_;
       topic_tools::ShapeShifter::ConstPtr msg_;
-
-      Entry(const boost::shared_ptr<ros::Subscriber>& sub)
-      : sub_(boost::weak_ptr<ros::Subscriber>(sub))
-      {}
     };
 
+    boost::mutex sub_mutex_;
     std::map<std::string, Entry> received_;
-    boost::mutex mutex_;
   };
 } // namespace haros
 

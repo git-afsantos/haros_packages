@@ -36,19 +36,23 @@
 #define HAROS_ASSERT_MESSAGE_EVENT_H
 
 #include <cstdint>
+
 #include <boost/shared_ptr.hpp>
+
+#include <topic_tools/shape_shifter.h>
 
 namespace haros
 {
-  /** This is supposed to be a very lightweight object. It is basically a pair
-   * of a clock and a (shared) pointer to a message. Thus, it can be copyable.
+  /** This is supposed to be a very lightweight object.
+   * It is basically a pair of a time and a pointer to a message.
+   * Thus, it is copyable.
    * Can also be stored directly, instead of storing a pointer.
    */
   class MessageEvent
   {
   public:
     MessageEvent();
-    MessageEvent(const ros::Time time, const boost::shared_ptr<void> data);
+    MessageEvent(const ros::Time time, const topic_tools::ShapeShifter::ConstPtr msg);
 
     template<class M>
     boost::shared_ptr<M> msg();

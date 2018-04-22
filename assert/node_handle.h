@@ -93,31 +93,9 @@ namespace haros
     {
       ros::Subscriber main_sub = ros::NodeHandle::subscribe(ops);
       // ops.topic is changed to the fully resolved topic
-      ros::SubscribeOptions history_ops;
-      history_ops.topic = ops.topic;
-      history_ops.queue_size = ops.queue_size;
-      history_ops.md5sum = ros::message_traits::md5sum<topic_tools::ShapeShifter>();
-      history_ops.datatype = ros::message_traits::datatype<topic_tools::ShapeShifter>();
-      // bind makes a copy of the topic string, so it is safe to use it
-      history_ops.helper = boost::make_shared<ros::SubscriptionCallbackHelperT<
-          const ros::MessageEvent<topic_tools::ShapeShifter const> &> >(
-              boost::bind(&History::receive, boost::ref(History::instance), ops.topic, _1));
-      // relevant:
-      // https://answers.ros.org/question/273964/using-shapeshifter-messageevent-and-boost-bind-together-to-pass-arguments-to-callback/
-      // http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#MessageEvent_.5BROS_1.1.2B-.5D
-      ros::Subscriber history_sub
-      
-        // consider creating regular ros::Subscriber and defining a subclass of it
-        // then create a copy of ros::Sub of the new subtype (copy constructor)
-        // and return the copy
-
-        // create new MessageEvent in history for this topic
-      
-        
-      ros::SubscribeOptions ops;
-      ops.template initByFullCallbackType<M>(topic, queue_size, boost::bind(fp, obj, _1));
-      ops.transport_hints = transport_hints;
-      return subscribe(ops);
+      boost::shared_ptr<ros::Subscriber> history_sub =
+          History::instance.subscribe(ops.topic, ops.queue_size);
+      return Subscriber(main_sub, history_sub);
     }
 
     ////////////////////////////////////////////////////////////////////////////
