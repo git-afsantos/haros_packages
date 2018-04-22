@@ -35,8 +35,6 @@
 #ifndef HAROS_ASSERT_MESSAGE_EVENT_H
 #define HAROS_ASSERT_MESSAGE_EVENT_H
 
-#include <cstdint>
-
 #include <boost/shared_ptr.hpp>
 
 #include <topic_tools/shape_shifter.h>
@@ -56,13 +54,14 @@ namespace haros
 
     template<class M>
     boost::shared_ptr<M> msg();
-    // return msg_.instantiate<M>();
 
     bool hasOccurred();
 
-    bool operator < (const MessageEvent& me) const;
-    bool operator > (const MessageEvent& me) const;
-    bool operator == (const MessageEvent& me) const;
+    bool operator< (const MessageEvent& me) const;
+    bool operator<= (const MessageEvent& me) const;
+    bool operator> (const MessageEvent& me) const;
+    bool operator>= (const MessageEvent& me) const;
+    bool operator== (const MessageEvent& me) const;
 
   private:
     ros::Time time_;

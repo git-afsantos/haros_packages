@@ -42,11 +42,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 
-#include <ros/transport_hints.h>
-#include <ros/parameter_adapter.h>
-#include <ros/subscribe_options.h>
-#include <ros/publisher.h>
-#include <ros/node_handle.h>
+#include <ros/ros.h>
 
 #include "history.h"
 #include "publisher.h"
@@ -62,10 +58,13 @@ namespace haros
   public:
     // The following constructors should do the same as the regular ros::NodeHandle
     // ones, except for the initialisation of additional variables.
-    NodeHandle(const std::string& ns = std::string(), const M_string& remappings = M_string());
+    NodeHandle(const std::string& ns = std::string(),
+               const M_string& remappings = M_string());
+    NodeHandle(const ros::NodeHandle& rhs);
     NodeHandle(const NodeHandle& rhs);
-    NodeHandle(const NodeHandle& parent, const std::string& ns);
-    NodeHandle(const NodeHandle& parent, const std::string& ns, const M_string& remappings);
+    NodeHandle(const ros::NodeHandle& parent, const std::string& ns);
+    NodeHandle(const ros::NodeHandle& parent, const std::string& ns,
+               const M_string& remappings);
     ~NodeHandle();
 
     ////////////////////////////////////////////////////////////////////////////
@@ -88,35 +87,169 @@ namespace haros
     // typedef typename ros::ParameterAdapter<M>::Message MessageType;
     // create callback for const MessageType::ConstPtr&
 
-    /** Subscribe to a topic, version with full range of SubscribeOptions */
-    Subscriber subscribe(SubscribeOptions& ops);
+    /** Subscribe to a topic, version for class member function with bare pointer */
+    template<class M, class T>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size,
+                         void(T::*fp)(M), T* obj,
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
     {
-      ros::Subscriber main_sub = ros::NodeHandle::subscribe(ops);
-      // ops.topic is changed to the fully resolved topic
-      boost::shared_ptr<ros::Subscriber> history_sub =
-          History::instance.subscribe(ops.topic, ops.queue_size);
-      return Subscriber(main_sub, history_sub);
+      ros::SubscribeOptions ops;
+      ops.template initByFullCallbackType<M>(topic, queue_size, boost::bind(fp, obj, _1));
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
     }
+
+    /** Subscribe to a topic, version for const class member function with bare pointer */
+    template<class M, class T>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size,
+                         void(T::*fp)(M) const, T* obj,
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template initByFullCallbackType<M>(topic, queue_size, boost::bind(fp, obj, _1));
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for class member function with bare pointer */
+    template<class M, class T>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size, 
+                         void(T::*fp)(const boost::shared_ptr<M const>&), T* obj, 
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template init<M>(topic, queue_size, boost::bind(fp, obj, _1));
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for const class member function with bare pointer */
+    template<class M, class T>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size, 
+                         void(T::*fp)(const boost::shared_ptr<M const>&) const, T* obj, 
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template init<M>(topic, queue_size, boost::bind(fp, obj, _1));
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for class member function with shared_ptr */
+    template<class M, class T>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size,
+                         void(T::*fp)(M), const boost::shared_ptr<T>& obj,
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template initByFullCallbackType<M>(topic, queue_size, boost::bind(fp, obj.get(), _1));
+      ops.tracked_object = obj;
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for const class member function with shared_ptr */
+    template<class M, class T>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size,
+                         void(T::*fp)(M) const, const boost::shared_ptr<T>& obj,
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template initByFullCallbackType<M>(topic, queue_size, boost::bind(fp, obj.get(), _1));
+      ops.tracked_object = obj;
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for class member function with shared_ptr */
+    template<class M, class T>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size, 
+                         void(T::*fp)(const boost::shared_ptr<M const>&), 
+                         const boost::shared_ptr<T>& obj,
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template init<M>(topic, queue_size, boost::bind(fp, obj.get(), _1));
+      ops.tracked_object = obj;
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for const class member function with shared_ptr */
+    template<class M, class T>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size,
+                         void(T::*fp)(const boost::shared_ptr<M const>&) const,
+                         const boost::shared_ptr<T>& obj,
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template init<M>(topic, queue_size, boost::bind(fp, obj.get(), _1));
+      ops.tracked_object = obj;
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for bare function */
+    template<class M>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(*fp)(M),
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template initByFullCallbackType<M>(topic, queue_size, fp);
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for bare function */
+    template<class M>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size,
+                         void(*fp)(const boost::shared_ptr<M const>&),
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template init<M>(topic, queue_size, fp);
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for arbitrary boost::function object */
+    template<class M>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size,
+                         const boost::function<void (const boost::shared_ptr<M const>&)>& callback,
+                         const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template init<M>(topic, queue_size, callback);
+      ops.tracked_object = tracked_object;
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version for arbitrary boost::function object */
+    template<class M, class C>
+    Subscriber subscribe(const std::string& topic, uint32_t queue_size,
+                         const boost::function<void (C)>& callback,
+                         const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
+                         const ros::TransportHints& transport_hints = ros::TransportHints())
+    {
+      ros::SubscribeOptions ops;
+      ops.template initByFullCallbackType<C>(topic, queue_size, callback);
+      ops.tracked_object = tracked_object;
+      ops.transport_hints = transport_hints;
+      return subscribe(ops);
+    }
+
+    /** Subscribe to a topic, version with full range of SubscribeOptions */
+    Subscriber subscribe(ros::SubscribeOptions& ops);
 
     ////////////////////////////////////////////////////////////////////////////
     // HAROS Interface
     ////////////////////////////////////////////////////////////////////////////
 
-    MessageEvent lastReceive(const std::string& topic);
-
-
-  private:
-    boost::shared_ptr<History> history_;
-
-    template<class M, class P>
-    void subscribeCallback(const std::string& topic, const M::ConstPtr& msg,
-                           const boost::function<void (P)>& callback)
+    MessageEvent lastReceive(const std::string& topic)
     {
-      // this binding crap may not be needed after all, since ROS supports
-      // multiple callbacks on the same topic.
-      // I think it may not be as performant as a single callback, though.
-      history_.template receive<M>(topic, msg);
-      callback();
+      return History::instance.lastReceive(topic);
     }
   };
 } // namespace haros

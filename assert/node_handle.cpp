@@ -32,48 +32,46 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#ifndef HAROS_ASSERT_SUBSCRIBER_H
-#define HAROS_ASSERT_SUBSCRIBER_H
-
-#include <string>
+#include "node_handle.h"
 
 #include <boost/shared_ptr.hpp>
 
-#include <ros/ros.h>
-
-#include "history.h"
-
 namespace haros
 {
-  class NodeHandle;
+NodeHandle::NodeHandle(const std::string& ns = std::string(),
+                       const M_string& remappings = M_string())
+: ros::NodeHandle(ns, remappings)
+{}
 
-  class Subscriber : public ros::Subscriber
+NodeHandle::NodeHandle(const ros::NodeHandle& rhs)
+: ros::NodeHandle(rhs)
+{}
+
+NodeHandle::NodeHandle(const NodeHandle& rhs)
+: ros::NodeHandle(rhs)
+{}
+
+NodeHandle::NodeHandle(const ros::NodeHandle& parent, const std::string& ns)
+: ros::NodeHandle(parent, ns)
+{}
+
+NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns,
+                       const M_string& remappings)
+: ros::NodeHandle(parent, ns, remappings)
+{}
+
+NodeHandle::~NodeHandle() {}
+
+Subscriber NodeHandle::subscribe(ros::SubscribeOptions& ops)
+{
+  ros::Subscriber main_sub = ros::NodeHandle::subscribe(ops);
+  // ops.topic is changed to the fully resolved topic
+  if (main_sub)
   {
-  public:
-    Subscriber() {};
-    Subscriber(const ros::Subscriber& rhs);
-    Subscriber(const Subscriber& rhs);
-    ~Subscriber();
-
-    MessageEvent lastReceive()
-    {
-      return History::instance.lastReceive(getTopic());
-    }
-
-    template<class M>
-    boost::shared_ptr<M> lastMessage()
-    {
-      return lastReceive().msg<M>();
-    }
-
-  private:
-    Subscriber(const ros::Subscriber& main_sub,
-               const boost::shared_ptr<ros::Subscriber>& history_sub);
-
-    boost::shared_ptr<ros::Subscriber> history_sub_;
-
-    friend NodeHandle;
-  };
+    boost::shared_ptr<ros::Subscriber> history_sub =
+        History::instance.subscribe(ops.topic, ops.queue_size);
+    return Subscriber(main_sub, history_sub);
+  }
+  return Subscriber(main_sub);
+}
 } // namespace haros
-
-#endif // HAROS_ASSERT_SUBSCRIBER_H

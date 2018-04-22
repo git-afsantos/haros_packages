@@ -32,48 +32,51 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#ifndef HAROS_ASSERT_SUBSCRIBER_H
-#define HAROS_ASSERT_SUBSCRIBER_H
-
-#include <string>
-
-#include <boost/shared_ptr.hpp>
-
-#include <ros/ros.h>
-
-#include "history.h"
+#include "message_event.h"
 
 namespace haros
 {
-  class NodeHandle;
+MessageEvent::MessageEvent() {}
 
-  class Subscriber : public ros::Subscriber
-  {
-  public:
-    Subscriber() {};
-    Subscriber(const ros::Subscriber& rhs);
-    Subscriber(const Subscriber& rhs);
-    ~Subscriber();
+MessageEvent::MessageEvent(const ros::Time time,
+                           const topic_tools::ShapeShifter::ConstPtr msg)
+: time_(time)
+, msg_(msg)
+{}
 
-    MessageEvent lastReceive()
-    {
-      return History::instance.lastReceive(getTopic());
-    }
+template<class M>
+boost::shared_ptr<M> MessageEvent::msg()
+{
+  return msg_.instantiate<M>();
+}
 
-    template<class M>
-    boost::shared_ptr<M> lastMessage()
-    {
-      return lastReceive().msg<M>();
-    }
+bool MessageEvent::hasOccurred()
+{
+  return time_.isValid();
+}
 
-  private:
-    Subscriber(const ros::Subscriber& main_sub,
-               const boost::shared_ptr<ros::Subscriber>& history_sub);
+bool MessageEvent::operator< (const MessageEvent& me) const
+{
+  return time_ < me.time_;
+}
 
-    boost::shared_ptr<ros::Subscriber> history_sub_;
+bool MessageEvent::operator<= (const MessageEvent& me) const
+{
+  return time_ <= me.time_;
+}
 
-    friend NodeHandle;
-  };
+bool MessageEvent::operator> (const MessageEvent& me) const
+{
+  return time_ > me.time_;
+}
+
+bool MessageEvent::operator>= (const MessageEvent& me) const
+{
+  return time_ >= me.time_;
+}
+
+bool MessageEvent::operator== (const MessageEvent& me) const
+{
+  return time_ == me.time_ && msg_ == me.msg_;
+}
 } // namespace haros
-
-#endif // HAROS_ASSERT_SUBSCRIBER_H
