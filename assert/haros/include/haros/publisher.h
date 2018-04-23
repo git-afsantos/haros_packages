@@ -35,11 +35,11 @@
 #ifndef HAROS_ASSERT_PUBLISHER_H
 #define HAROS_ASSERT_PUBLISHER_H
 
-#include <cstdint>
 #include <string>
-#include <ros/publisher.h>
 
-#include "history.h"
+#include <ros/ros.h>
+
+#include "haros/history.h"
 
 namespace haros
 {

@@ -32,46 +32,63 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#include "node_handle.h"
+#ifndef HAROS_ASSERT_HISTORY_H
+#define HAROS_ASSERT_HISTORY_H
+
+#include <string>
+#include <map>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/thread/mutex.hpp>
+
+#include <ros/ros.h>
+
+#include <topic_tools/shape_shifter.h>
+
+#include "haros/message_event.h"
 
 namespace haros
 {
-NodeHandle::NodeHandle(const std::string& ns = std::string(),
-                       const M_string& remappings = M_string())
-: ros::NodeHandle(ns, remappings)
-{}
-
-NodeHandle::NodeHandle(const ros::NodeHandle& rhs)
-: ros::NodeHandle(rhs)
-{}
-
-NodeHandle::NodeHandle(const NodeHandle& rhs)
-: ros::NodeHandle(rhs)
-{}
-
-NodeHandle::NodeHandle(const ros::NodeHandle& parent, const std::string& ns)
-: ros::NodeHandle(parent, ns)
-{}
-
-NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns,
-                       const M_string& remappings)
-: ros::NodeHandle(parent, ns, remappings)
-{}
-
-NodeHandle::~NodeHandle() {}
-
-Subscriber NodeHandle::subscribe(ros::SubscribeOptions& ops)
-{
-  ros::Subscriber main_sub = ros::NodeHandle::subscribe(ops);
-  // ops.topic is changed to the fully resolved topic
-  if (main_sub)
+  /** History will remain alive for the program duration, since everything else is
+   * non-unique and/or temporary (NodeHandle, Subscriber, Publisher).
+   * Since History is shared across multiple threads, it has to
+   * implement concurrency control.
+   */
+  class History
   {
-    boost::shared_ptr<ros::Subscriber> history_sub =
-        History::instance.subscribe(ops.topic, ops.queue_size);
-    return Subscriber(main_sub, history_sub);
-  }
-  return Subscriber(main_sub);
-}
+  public:
+    static History instance;
+
+
+    MessageEvent lastReceive(const std::string& topic);
+
+    boost::shared_ptr<ros::Subscriber> subscribe(const std::string& topic,
+                                                 const uint32_t queue_size);
+
+  private:
+    History();
+
+    void receive(const std::string& topic,
+                 const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event);
+    // msg_event.getMessage() is of type topic_tools::ShapeShifter::ConstPtr
+
+    /** An Entry has to be allocated on the heap.
+     *  It must stay alive for as long as History, since it will be
+     *  the tracked object for the history callback.
+     */
+    struct Entry
+    {
+      boost::weak_ptr<ros::Subscriber> sub_;
+      ros::Time time_;
+      topic_tools::ShapeShifter::ConstPtr msg_;
+
+      Entry() : time_(ros::Time(0)) {}
+    };
+
+    boost::mutex sub_mutex_;
+    std::map<std::string, Entry> received_;
+  };
 } // namespace haros
+
+#endif // HAROS_ASSERT_HISTORY_H

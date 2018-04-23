@@ -32,11 +32,13 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#include "message_event.h"
+#include "haros/message_event.h"
 
 namespace haros
 {
-MessageEvent::MessageEvent() {}
+MessageEvent::MessageEvent()
+: time_(ros::Time(0))
+{}
 
 MessageEvent::MessageEvent(const ros::Time time,
                            const topic_tools::ShapeShifter::ConstPtr msg)
@@ -44,15 +46,9 @@ MessageEvent::MessageEvent(const ros::Time time,
 , msg_(msg)
 {}
 
-template<class M>
-boost::shared_ptr<M> MessageEvent::msg()
-{
-  return msg_.instantiate<M>();
-}
-
 bool MessageEvent::hasOccurred()
 {
-  return time_.isValid();
+  return time_.isValid() && !time_.isZero();
 }
 
 bool MessageEvent::operator< (const MessageEvent& me) const

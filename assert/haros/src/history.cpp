@@ -32,7 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#include "history.h"
+#include "haros/history.h"
 
 #include <boost/bind.hpp>
 
@@ -40,7 +40,7 @@ namespace haros
 {
 History::History() {}
 
-History::instance;
+History History::instance;
 
 MessageEvent History::lastReceive(const std::string& topic)
 {
@@ -56,13 +56,18 @@ MessageEvent History::lastReceive(const std::string& topic)
 boost::shared_ptr<ros::Subscriber> History::subscribe(const std::string& topic,
                                                       const uint32_t queue_size)
 {
+  // TODO: if the client subscribes multiple times to the same topic,
+  // make sure this callback is the last to be executed.
   boost::mutex::scoped_lock lock(sub_mutex_);
   std::map<std::string, Entry>::iterator it = received_.find(topic);
   // return subscriber if it already exists
-  if (it != received_.end()
-      && boost::shared_ptr<ros::Subscriber> p = it->second.sub_.lock())
+  if (it != received_.end())
   {
-    return p;
+    boost::shared_ptr<ros::Subscriber> p = it->second.sub_.lock();
+    if (p)
+    {
+      return p;
+    }
   }
   // if it does not exist (anymore), subscribe again
   ros::SubscribeOptions ops;
@@ -85,8 +90,8 @@ boost::shared_ptr<ros::Subscriber> History::subscribe(const std::string& topic,
 // relevant:
 // http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#MessageEvent_.5BROS_1.1.2B-.5D
 // https://answers.ros.org/question/273964/using-shapeshifter-messageevent-and-boost-bind-together-to-pass-arguments-to-callback/
-void receive(const std::string& topic,
-             const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event)
+void History::receive(const std::string& topic,
+    const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event)
 {
   boost::mutex::scoped_lock lock(sub_mutex_);
   Entry& e = received_[topic];

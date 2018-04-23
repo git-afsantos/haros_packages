@@ -35,18 +35,16 @@
 #ifndef HAROS_ASSERT_NODE_HANDLE_H
 #define HAROS_ASSERT_NODE_HANDLE_H
 
-#include <cstdint>
 #include <string>
 
-#include <boost/core/ref.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 
 #include <ros/ros.h>
 
-#include "history.h"
-#include "publisher.h"
-#include "subscriber.h"
+#include "haros/history.h"
+#include "haros/publisher.h"
+#include "haros/subscriber.h"
 
 namespace haros
 {

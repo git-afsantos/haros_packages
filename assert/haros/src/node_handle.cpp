@@ -32,24 +32,45 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#include "subscriber.h"
+#include "haros/node_handle.h"
+
+#include <boost/shared_ptr.hpp>
 
 namespace haros
 {
-Subscriber::Subscriber(const ros::Subscriber& rhs)
-: ros::Subscriber(rhs)
+NodeHandle::NodeHandle(const std::string& ns, const M_string& remappings)
+: ros::NodeHandle(ns, remappings)
 {}
 
-Subscriber::Subscriber(const Subscriber& rhs)
-: ros::Subscriber(rhs)
-, history_sub_(rhs.history_sub_)
+NodeHandle::NodeHandle(const ros::NodeHandle& rhs)
+: ros::NodeHandle(rhs)
 {}
 
-Subscriber::Subscriber(const ros::Subscriber& main_sub,
-    const boost::shared_ptr<ros::Subscriber>& history_sub)
-: ros::Subscriber(main_sub)
-, history_sub_(history_sub)
+NodeHandle::NodeHandle(const NodeHandle& rhs)
+: ros::NodeHandle(rhs)
 {}
 
-Subscriber::~Subscriber() {}
+NodeHandle::NodeHandle(const ros::NodeHandle& parent, const std::string& ns)
+: ros::NodeHandle(parent, ns)
+{}
+
+NodeHandle::NodeHandle(const ros::NodeHandle& parent, const std::string& ns,
+                       const M_string& remappings)
+: ros::NodeHandle(parent, ns, remappings)
+{}
+
+NodeHandle::~NodeHandle() {}
+
+Subscriber NodeHandle::subscribe(ros::SubscribeOptions& ops)
+{
+  ros::Subscriber main_sub = ros::NodeHandle::subscribe(ops);
+  // ops.topic is changed to the fully resolved topic
+  if (main_sub)
+  {
+    boost::shared_ptr<ros::Subscriber> history_sub =
+        History::instance.subscribe(ops.topic, ops.queue_size);
+    return Subscriber(main_sub, history_sub);
+  }
+  return Subscriber(main_sub);
+}
 } // namespace haros

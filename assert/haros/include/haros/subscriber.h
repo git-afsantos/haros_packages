@@ -32,62 +32,48 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#ifndef HAROS_ASSERT_HISTORY_H
-#define HAROS_ASSERT_HISTORY_H
+#ifndef HAROS_ASSERT_SUBSCRIBER_H
+#define HAROS_ASSERT_SUBSCRIBER_H
 
-#include <cstdint>
 #include <string>
-#include <map>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <ros/ros.h>
 
-#include <topic_tools/shape_shifter.h>
-
-#include "message_event.h"
+#include "haros/history.h"
 
 namespace haros
 {
-  /** History will remain alive for the program duration, since everything else is
-   * non-unique and/or temporary (NodeHandle, Subscriber, Publisher).
-   * Since History is shared across multiple threads, it has to
-   * implement concurrency control.
-   */
-  class History
+  class NodeHandle;
+
+  class Subscriber : public ros::Subscriber
   {
   public:
-    static const History instance;
+    Subscriber() {};
+    Subscriber(const ros::Subscriber& rhs);
+    Subscriber(const Subscriber& rhs);
+    ~Subscriber();
 
+    MessageEvent lastReceive()
+    {
+      return History::instance.lastReceive(getTopic());
+    }
 
-    MessageEvent lastReceive(const std::string& topic);
-
-    boost::shared_ptr<ros::Subscriber> subscribe(const std::string& topic,
-                                                 const uint32_t queue_size);
+    template<class M>
+    boost::shared_ptr<M> lastMessage()
+    {
+      return lastReceive().msg<M>();
+    }
 
   private:
-    History();
+    Subscriber(const ros::Subscriber& main_sub,
+               const boost::shared_ptr<ros::Subscriber>& history_sub);
 
-    void receive(const std::string& topic,
-                 const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event);
-    // msg_event.getMessage() is of type topic_tools::ShapeShifter::ConstPtr
+    boost::shared_ptr<ros::Subscriber> history_sub_;
 
-    /** An Entry has to be allocated on the heap.
-     *  It must stay alive for as long as History, since it will be
-     *  the tracked object for the history callback.
-     */
-    struct Entry
-    {
-      boost::weak_ptr<ros::Subscriber> sub_;
-      ros::Time time_;
-      topic_tools::ShapeShifter::ConstPtr msg_;
-    };
-
-    boost::mutex sub_mutex_;
-    std::map<std::string, Entry> received_;
+    friend NodeHandle;
   };
 } // namespace haros
 
-#endif // HAROS_ASSERT_HISTORY_H
+#endif // HAROS_ASSERT_SUBSCRIBER_H

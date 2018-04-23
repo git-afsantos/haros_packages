@@ -32,41 +32,13 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#ifndef HAROS_ASSERT_MESSAGE_EVENT_H
-#define HAROS_ASSERT_MESSAGE_EVENT_H
+#ifndef HAROS_ASSERT_HAROS_H
+#define HAROS_ASSERT_HAROS_H
 
-#include <boost/shared_ptr.hpp>
+#include "haros/message_event.h"
+#include "haros/history.h"
+#include "haros/publisher.h"
+#include "haros/subscriber.h"
+#include "haros/node_handle.h"
 
-#include <topic_tools/shape_shifter.h>
-
-namespace haros
-{
-  /** This is supposed to be a very lightweight object.
-   * It is basically a pair of a time and a pointer to a message.
-   * Thus, it is copyable.
-   * Can also be stored directly, instead of storing a pointer.
-   */
-  class MessageEvent
-  {
-  public:
-    MessageEvent();
-    MessageEvent(const ros::Time time, const topic_tools::ShapeShifter::ConstPtr msg);
-
-    template<class M>
-    boost::shared_ptr<M> msg();
-
-    bool hasOccurred();
-
-    bool operator< (const MessageEvent& me) const;
-    bool operator<= (const MessageEvent& me) const;
-    bool operator> (const MessageEvent& me) const;
-    bool operator>= (const MessageEvent& me) const;
-    bool operator== (const MessageEvent& me) const;
-
-  private:
-    ros::Time time_;
-    topic_tools::ShapeShifter::ConstPtr msg_;
-  };
-} // namespace haros
-
-#endif // HAROS_ASSERT_MESSAGE_EVENT_H
+#endif // HAROS_ASSERT_HAROS_H

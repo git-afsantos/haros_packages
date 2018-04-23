@@ -32,48 +32,24 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#ifndef HAROS_ASSERT_SUBSCRIBER_H
-#define HAROS_ASSERT_SUBSCRIBER_H
-
-#include <string>
-
-#include <boost/shared_ptr.hpp>
-
-#include <ros/ros.h>
-
-#include "history.h"
+#include "haros/subscriber.h"
 
 namespace haros
 {
-  class NodeHandle;
+Subscriber::Subscriber(const ros::Subscriber& rhs)
+: ros::Subscriber(rhs)
+{}
 
-  class Subscriber : public ros::Subscriber
-  {
-  public:
-    Subscriber() {};
-    Subscriber(const ros::Subscriber& rhs);
-    Subscriber(const Subscriber& rhs);
-    ~Subscriber();
+Subscriber::Subscriber(const Subscriber& rhs)
+: ros::Subscriber(rhs)
+, history_sub_(rhs.history_sub_)
+{}
 
-    MessageEvent lastReceive()
-    {
-      return History::instance.lastReceive(getTopic());
-    }
+Subscriber::Subscriber(const ros::Subscriber& main_sub,
+    const boost::shared_ptr<ros::Subscriber>& history_sub)
+: ros::Subscriber(main_sub)
+, history_sub_(history_sub)
+{}
 
-    template<class M>
-    boost::shared_ptr<M> lastMessage()
-    {
-      return lastReceive().msg<M>();
-    }
-
-  private:
-    Subscriber(const ros::Subscriber& main_sub,
-               const boost::shared_ptr<ros::Subscriber>& history_sub);
-
-    boost::shared_ptr<ros::Subscriber> history_sub_;
-
-    friend NodeHandle;
-  };
+Subscriber::~Subscriber() {}
 } // namespace haros
-
-#endif // HAROS_ASSERT_SUBSCRIBER_H
