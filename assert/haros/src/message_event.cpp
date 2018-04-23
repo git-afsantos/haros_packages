@@ -75,4 +75,9 @@ bool MessageEvent::operator== (const MessageEvent& me) const
 {
   return time_ == me.time_ && msg_ == me.msg_;
 }
+
+MessageEvent::operator void*() const
+{
+  return (time_.isValid() && !time_.isZero() && msg_) ? (void*)1 : (void*)0;
+}
 } // namespace haros

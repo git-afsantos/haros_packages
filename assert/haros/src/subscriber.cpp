@@ -46,7 +46,7 @@ Subscriber::Subscriber(const Subscriber& rhs)
 {}
 
 Subscriber::Subscriber(const ros::Subscriber& main_sub,
-    const boost::shared_ptr<ros::Subscriber>& history_sub)
+    const History::HolderPtr& history_sub)
 : ros::Subscriber(main_sub)
 , history_sub_(history_sub)
 {}

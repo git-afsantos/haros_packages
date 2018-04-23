@@ -67,7 +67,7 @@ Subscriber NodeHandle::subscribe(ros::SubscribeOptions& ops)
   // ops.topic is changed to the fully resolved topic
   if (main_sub)
   {
-    boost::shared_ptr<ros::Subscriber> history_sub =
+    History::HolderPtr history_sub =
         History::instance.subscribe(ops.topic, ops.queue_size);
     return Subscriber(main_sub, history_sub);
   }

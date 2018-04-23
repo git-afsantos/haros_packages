@@ -63,8 +63,17 @@ namespace haros
 
     MessageEvent lastReceive(const std::string& topic);
 
-    boost::shared_ptr<ros::Subscriber> subscribe(const std::string& topic,
-                                                 const uint32_t queue_size);
+    struct SubscriberHolder
+    {
+      ros::Subscriber sub_;
+      SubscriberHolder() {}
+      SubscriberHolder(const ros::Subscriber& sub) : sub_(sub) {}
+      ~SubscriberHolder() {}
+    };
+
+    typedef boost::shared_ptr<SubscriberHolder> HolderPtr;
+
+    HolderPtr subscribe(const std::string& topic, const uint32_t queue_size);
 
   private:
     History();
@@ -79,7 +88,7 @@ namespace haros
      */
     struct Entry
     {
-      boost::weak_ptr<ros::Subscriber> sub_;
+      boost::weak_ptr<SubscriberHolder> sub_;
       ros::Time time_;
       topic_tools::ShapeShifter::ConstPtr msg_;
 

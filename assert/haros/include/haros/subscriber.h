@@ -68,9 +68,9 @@ namespace haros
 
   private:
     Subscriber(const ros::Subscriber& main_sub,
-               const boost::shared_ptr<ros::Subscriber>& history_sub);
+               const History::HolderPtr& history_sub);
 
-    boost::shared_ptr<ros::Subscriber> history_sub_;
+    History::HolderPtr history_sub_;
 
     friend NodeHandle;
   };

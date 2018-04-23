@@ -63,6 +63,8 @@ namespace haros
     bool operator>= (const MessageEvent& me) const;
     bool operator== (const MessageEvent& me) const;
 
+    operator void*() const;
+
   private:
     ros::Time time_;
     topic_tools::ShapeShifter::ConstPtr msg_;

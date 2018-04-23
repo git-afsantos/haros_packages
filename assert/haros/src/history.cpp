@@ -53,23 +53,24 @@ MessageEvent History::lastReceive(const std::string& topic)
   return MessageEvent();
 }
 
-boost::shared_ptr<ros::Subscriber> History::subscribe(const std::string& topic,
-                                                      const uint32_t queue_size)
+History::HolderPtr History::subscribe(const std::string& topic,
+                                      const uint32_t queue_size)
 {
-  // TODO: if the client subscribes multiple times to the same topic,
-  // make sure this callback is the last to be executed.
   boost::mutex::scoped_lock lock(sub_mutex_);
+  History::HolderPtr sub_ptr;
   std::map<std::string, Entry>::iterator it = received_.find(topic);
   // return subscriber if it already exists
   if (it != received_.end())
   {
-    boost::shared_ptr<ros::Subscriber> p = it->second.sub_.lock();
-    if (p)
+    sub_ptr = it->second.sub_.lock();
+    if (sub_ptr)
     {
-      return p;
+      // if the client subscribes multiple times to the same topic,
+      // make sure this callback is the last to be executed.
+      sub_ptr->sub_ = ros::Subscriber();
     }
   }
-  // if it does not exist (anymore), subscribe again
+  // at this point, the history callback does not exist anymore
   ros::SubscribeOptions ops;
   ops.topic = topic;
   ops.queue_size = queue_size;
@@ -81,7 +82,11 @@ boost::shared_ptr<ros::Subscriber> History::subscribe(const std::string& topic,
           boost::bind(&History::receive, this, topic, _1));
   ros::NodeHandle nh;
   ros::Subscriber sub = nh.subscribe(ops);
-  boost::shared_ptr<ros::Subscriber> sub_ptr(new ros::Subscriber(sub));
+  if (!sub_ptr)
+  {
+    sub_ptr.reset(new History::SubscriberHolder());
+  }
+  sub_ptr->sub_ = sub;
   Entry& e = received_[topic];
   e.sub_ = sub_ptr;
   return sub_ptr;
