@@ -32,33 +32,19 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#ifndef HAROS_ASSERT_PUBLISHER_H
-#define HAROS_ASSERT_PUBLISHER_H
-
-#include <string>
-
-#include <boost/shared_ptr.hpp>
-
-#include <ros/ros.h>
-
-#include "haros/history.h"
+#include "haros/publisher.h"
 
 namespace haros
 {
-  class Publisher : public ros::Publisher
-  {
-  public:
-    Publisher() {}
-    Publisher(const ros::Publisher& rhs);
-    Publisher(const Publisher& rhs);
-    ~Publisher();
 
-    /** */
-    template <typename M>
-    void publish(const boost::shared_ptr<M>& message) const
-    {
-    }
-  };
+Publisher::Publisher(const ros::Publisher& rhs)
+: ros::Publisher(rhs)
+{}
+
+Publisher::Publisher(const Publisher& rhs)
+: ros::Publisher(rhs)
+{}
+
+Publisher::~Publisher() {}
+
 } // namespace haros
-
-#endif // HAROS_ASSERT_PUBLISHER_H

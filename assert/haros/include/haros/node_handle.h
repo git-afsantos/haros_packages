@@ -65,21 +65,40 @@ namespace haros
                const M_string& remappings);
     ~NodeHandle();
 
+    // Since the functions in ros::NodeHandle are not virtual, this is not
+    // true polymorphism and method overriding, it is just name hiding.
+    // We must re-define all functions, so that they call our version.
+
     ////////////////////////////////////////////////////////////////////////////
     // Versions of advertise()
     ////////////////////////////////////////////////////////////////////////////
 
-    // all inherited, except for
-    // Publisher advertise(AdvertiseOptions& ops);
+    /** Advertise a topic, simple version */
+    template <class M>
+    Publisher advertise(const std::string& topic, uint32_t queue_size,
+                        bool latch = false)
+    {
+      return Publisher(ros::NodeHandle::advertise<M>(topic, queue_size, latch));
+    }
+
+    /** Advertise a topic, with most of the available options, including subscriber status callbacks */
+    template <class M>
+    Publisher advertise(const std::string& topic, uint32_t queue_size,
+        const ros::SubscriberStatusCallback& connect_cb,
+        const ros::SubscriberStatusCallback& disconnect_cb = ros::SubscriberStatusCallback(),
+        const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
+        bool latch = false)
+    {
+      return Publisher(ros::NodeHandle::advertise<M>(topic, queue_size, connect_cb,
+          disconnect_cb, tracked_object, latch));
+    }
+
+    /** Advertise a topic, with full range of AdvertiseOptions */
+    Publisher advertise(ros::AdvertiseOptions& ops);
 
     ////////////////////////////////////////////////////////////////////////////
     // Versions of subscribe()
     ////////////////////////////////////////////////////////////////////////////
-
-    // TODO: define all other versions of subscribe.
-    // Since the functions in ros::NodeHandle are not virtual, this is not
-    // true polymorphism and method overriding, it is just name hiding.
-    // We must re-define all functions, so that they call our version.
 
     // TODO: if we ever need to compact callbacks into one with bindings:
     // typedef typename ros::ParameterAdapter<M>::Message MessageType;

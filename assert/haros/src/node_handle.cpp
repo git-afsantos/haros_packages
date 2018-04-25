@@ -61,6 +61,11 @@ NodeHandle::NodeHandle(const ros::NodeHandle& parent, const std::string& ns,
 
 NodeHandle::~NodeHandle() {}
 
+Publisher NodeHandle::advertise(ros::AdvertiseOptions& ops)
+{
+  return Publisher(ros::NodeHandle::advertise(ops));
+}
+
 Subscriber NodeHandle::subscribe(ros::SubscribeOptions& ops)
 {
   ros::Subscriber main_sub = ros::NodeHandle::subscribe(ops);
