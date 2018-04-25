@@ -105,13 +105,14 @@ namespace haros
     // create callback for const MessageType::ConstPtr&
 
     /** Subscribe to a topic, version for class member function with bare pointer */
-    template<class M, class T>
+    template<class P, class T>
     Subscriber subscribe(const std::string& topic, uint32_t queue_size,
-                         void(T::*fp)(M), T* obj,
+                         void(T::*fp)(P), T* obj,
                          const ros::TransportHints& transport_hints = ros::TransportHints())
     {
+      typedef typename ParameterAdapter<P>::Message MessageType;
       ros::SubscribeOptions ops;
-      ops.template initByFullCallbackType<M>(topic, queue_size, boost::bind(fp, obj, _1));
+      ops.template initByFullCallbackType<P>(topic, queue_size, boost::bind(fp, obj, _1));
       ops.transport_hints = transport_hints;
       return subscribe(ops);
     }

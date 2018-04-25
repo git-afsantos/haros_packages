@@ -40,7 +40,8 @@ namespace haros
 {
 History::History() {}
 
-History History::instance;
+template<class M>
+History<M> History<M>::instance;
 
 MessageEvent History::lastReceive(const std::string& topic)
 {
@@ -59,7 +60,6 @@ History::HolderPtr History::subscribe(const std::string& topic,
   boost::mutex::scoped_lock lock(sub_mutex_);
   History::HolderPtr sub_ptr;
   std::map<std::string, Entry>::iterator it = received_.find(topic);
-  // return subscriber if it already exists
   if (it != received_.end())
   {
     sub_ptr = it->second.sub_.lock();

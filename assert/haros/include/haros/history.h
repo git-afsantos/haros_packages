@@ -36,7 +36,7 @@
 #define HAROS_ASSERT_HISTORY_H
 
 #include <string>
-#include <map>
+#include <unordered_map>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -55,17 +55,23 @@ namespace haros
    * Since History is shared across multiple threads, it has to
    * implement concurrency control.
    */
+  template<class M>
   class History
   {
   public:
-    static History instance;
+    static History<M> instance;
 
 
     MessageEvent lastReceive(const std::string& topic);
 
+    // This is needed in case the client assigns multiple callbacks
+    // to the same topic. We must not invalidate previous pointers,
+    // but at the same time we must be able to unsubscribe and subscribe
+    // again, to make sure the history callback is called last.
     struct SubscriberHolder
     {
       ros::Subscriber sub_;
+
       SubscriberHolder() {}
       SubscriberHolder(const ros::Subscriber& sub) : sub_(sub) {}
       ~SubscriberHolder() {}
@@ -82,10 +88,6 @@ namespace haros
                  const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event);
     // msg_event.getMessage() is of type topic_tools::ShapeShifter::ConstPtr
 
-    /** An Entry has to be allocated on the heap.
-     *  It must stay alive for as long as History, since it will be
-     *  the tracked object for the history callback.
-     */
     struct Entry
     {
       boost::weak_ptr<SubscriberHolder> sub_;
