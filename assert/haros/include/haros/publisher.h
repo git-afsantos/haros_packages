@@ -45,16 +45,16 @@
 
 namespace haros
 {
-  class Publisher : public ros::Publisher
+  template<class M>
+  class Publisher
   {
   public:
     Publisher() {}
-    Publisher(const ros::Publisher& rhs);
-    Publisher(const Publisher& rhs);
-    ~Publisher();
+    Publisher(const ros::Publisher& rhs) {}
+    Publisher(const Publisher<M>& rhs) {}
+    ~Publisher() {}
 
     /** */
-    template <typename M>
     void publish(const boost::shared_ptr<M>& message) const
     {
     }

@@ -50,7 +50,7 @@ namespace haros
     //---------------------------------------------------------------------------
 
     const ros::Time time;
-    const M::ConstPtr msg;
+    const typename M::ConstPtr msg;
 
     //---------------------------------------------------------------------------
     // Constructors
@@ -60,7 +60,7 @@ namespace haros
     : time(ros::Time(0))
     {}
 
-    MessageEvent(const ros::Time& _time, const M::ConstPtr& _msg)
+    MessageEvent(const ros::Time& _time, const typename M::ConstPtr& _msg)
     : time(_time)
     , msg(_msg)
     {}

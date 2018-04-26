@@ -64,7 +64,7 @@ namespace haros
       }
     }
 
-    Subscriber(const Subscriber& rhs)
+    Subscriber(const Subscriber<M>& rhs)
     : ros_sub_(rhs.ros_sub_), history_sub_(rhs.history_sub_)
     {}
 
@@ -74,14 +74,14 @@ namespace haros
     // HAROS Interface
     //---------------------------------------------------------------------------
 
-    MessageEvent lastReceive()
+    MessageEvent<M> lastReceive()
     {
       return History<M>::instance.lastReceive(getTopic());
     }
 
-    boost::shared_ptr<M> lastMessage()
+    typename M::ConstPtr lastMessage()
     {
-      return lastReceive().msg<M>();
+      return lastReceive().msg;
     }
 
     //---------------------------------------------------------------------------
@@ -152,12 +152,9 @@ namespace haros
     }
 
   private:
-    Subscriber(const ros::Subscriber& ros_sub,
-               const History::HolderPtr& history_sub);
-
     ros::Subscriber ros_sub_;
 
-    History::HolderPtr history_sub_;
+    typename History<M>::HolderPtr history_sub_;
   };
 } // namespace haros
 

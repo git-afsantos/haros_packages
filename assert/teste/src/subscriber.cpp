@@ -1,37 +1,61 @@
 #include <ros/ros.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/String.h>
 
 #include "haros/haros.h"
 
 class Handler
 {
 public:
-    haros::NodeHandle node;
-    haros::Subscriber chatter;
-    haros::Subscriber chatter2;
+    ros::NodeHandle node;
+    haros::Subscriber<std_msgs::Int32> chatter;
+    haros::Subscriber<std_msgs::Int32> chatter2;
+    haros::Subscriber<std_msgs::String> str_chatter;
 
     Handler()
     {
-        chatter = node.subscribe("chatter", 10, &Handler::callback, this);
-        chatter2 = node.subscribe("chatter", 10, &Handler::callback2, this);
+        chatter = haros::Subscriber<std_msgs::Int32>(node.subscribe("chatter", 10, &Handler::callback, this));
+        chatter2 = haros::Subscriber<std_msgs::Int32>(node.subscribe("chatter", 10, &Handler::callback2, this));
+        str_chatter = haros::Subscriber<std_msgs::String>(node.subscribe("chatter_string", 10, &Handler::callback_str, this));
     }
 
     void callback(const std_msgs::Int32::ConstPtr& msg)
     {
-        //haros::MessageEvent evt = chatter.lastReceive();
-        //ROS_INFO_STREAM("Last receive has occurred: " << evt.hasOccurred());
-        //ROS_INFO_STREAM("Last receive has data: " << (evt.msg<std_msgs::Int32>() != NULL));
-        //if (evt.msg<std_msgs::Int32>())
-            //ROS_INFO_STREAM("Last receive data: " << evt.msg<std_msgs::Int32>()->data);
+        haros::MessageEvent<std_msgs::Int32> evt = chatter.lastReceive();
+        ROS_INFO_STREAM("Last receive has occurred: " << evt.hasOccurred());
+        if (evt.msg)
+            ROS_INFO_STREAM("Last receive data: " << evt.msg->data);
+        else
+            ROS_INFO("Last receive has no data.");
         
-        haros::fact(!chatter.lastReceive() ||
-                    chatter.lastMessage<std_msgs::Int32>()->data < msg->data);
+        ROS_ASSERT(!chatter.lastReceive() ||
+                    chatter.lastMessage()->data < msg->data);
     }
 
     void callback2(const std_msgs::Int32::ConstPtr& msg)
     {
-        haros::fact(!chatter2.lastReceive() ||
-                    chatter2.lastMessage<std_msgs::Int32>()->data < msg->data);
+        haros::MessageEvent<std_msgs::Int32> evt = chatter2.lastReceive();
+        ROS_INFO_STREAM("Last receive has occurred: " << evt.hasOccurred());
+        if (evt.msg)
+            ROS_INFO_STREAM("Last receive data: " << evt.msg->data);
+        else
+            ROS_INFO("Last receive has no data.");
+
+        ROS_ASSERT(!chatter2.lastReceive() ||
+                    chatter2.lastMessage()->data < msg->data);
+    }
+
+    void callback_str(const std_msgs::String::ConstPtr& msg)
+    {
+        haros::MessageEvent<std_msgs::String> evt = str_chatter.lastReceive();
+        ROS_INFO_STREAM("(String) Last receive has occurred: " << evt.hasOccurred());
+        if (evt.msg)
+            ROS_INFO_STREAM("(String) Last receive data: " << evt.msg->data);
+        else
+            ROS_INFO("(String) Last receive has no data.");
+
+        ROS_ASSERT(!str_chatter.lastReceive() ||
+                    str_chatter.lastMessage()->data == "Hello world!");
     }
 };
 

@@ -117,12 +117,9 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(haros
-  src/node_handle.cpp
-  src/history.cpp
-  src/message_event.cpp
-  src/subscriber.cpp
-)
+#add_library(haros
+#  src/history.cpp
+#)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -137,7 +134,7 @@ add_library(haros
 # add_dependencies(haros_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(haros ${catkin_LIBRARIES})
+#target_link_libraries(haros ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -154,9 +151,9 @@ target_link_libraries(haros ${catkin_LIBRARIES})
 # )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS haros
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+#install(TARGETS haros
+#  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#)
 
 ## Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}/

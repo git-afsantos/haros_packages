@@ -38,10 +38,10 @@
 #include <cassert>
 
 #include "haros/message_event.h"
+#include "haros/publish_event.h"
 #include "haros/history.h"
 #include "haros/publisher.h"
 #include "haros/subscriber.h"
-#include "haros/node_handle.h"
 
 namespace haros
 {
