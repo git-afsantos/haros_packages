@@ -32,133 +32,78 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#ifndef HAROS_ASSERT_SUBSCRIBER_H
-#define HAROS_ASSERT_SUBSCRIBER_H
-
-#include <string>
-
-#include <boost/shared_ptr.hpp>
-
-#include <ros/ros.h>
-
-#include "haros/history.h"
+#ifndef HAROS_ASSERT_PUBLISH_EVENT_H
+#define HAROS_ASSERT_PUBLISH_EVENT_H
 
 namespace haros
 {
+  /** This is supposed to be a very lightweight object.
+   * It is basically a pair of a time and a pointer to a message.
+   * Thus, it is copyable.
+   * Can also be stored directly, instead of storing a pointer.
+   */
   template<class M>
-  class Subscriber
+  struct PublishEvent
   {
-  public:
     //---------------------------------------------------------------------------
-    // Constructors and Destructors
+    // Member Variables
     //---------------------------------------------------------------------------
 
-    Subscriber() {}
+    const ros::Time time;
+    const M::ConstPtr msg;
 
-    Subscriber(const ros::Subscriber& sub)
-    : ros_sub_(sub)
-    {
-      if (sub)
-      {
-        history_sub_ = History<M>::instance.subscribe(sub.getTopic());
-      }
-    }
+    //---------------------------------------------------------------------------
+    // Constructors
+    //---------------------------------------------------------------------------
 
-    Subscriber(const Subscriber& rhs)
-    : ros_sub_(rhs.ros_sub_), history_sub_(rhs.history_sub_)
+    PublishEvent()
+    : time(ros::Time(0))
     {}
 
-    ~Subscriber() {}
+    PublishEvent(const ros::Time& _time, const M::ConstPtr& _msg)
+    : time(_time)
+    , msg(_msg)
+    {}
 
     //---------------------------------------------------------------------------
-    // HAROS Interface
+    // Methods and Operators
     //---------------------------------------------------------------------------
 
-    MessageEvent lastReceive()
+    bool hasOccurred()
     {
-      return History<M>::instance.lastReceive(getTopic());
+      return time.isValid() && !time.isZero();
     }
 
-    boost::shared_ptr<M> lastMessage()
+    bool operator< (const PublishEvent& rhs) const
     {
-      return lastReceive().msg<M>();
+      return time < rhs.time;
     }
 
-    //---------------------------------------------------------------------------
-    // ROS Subscriber Interface
-    //---------------------------------------------------------------------------
-
-    /**
-     * \brief Unsubscribe the callback associated with this Subscriber
-     *
-     * This method usually does not need to be explicitly called,
-     * as automatic shutdown happens when
-     * all copies of this Subscriber go out of scope
-     *
-     * This method overrides the automatic reference counted unsubscribe,
-     * and immediately unsubscribes the callback associated with this Subscriber
-     */
-    void shutdown()
+    bool operator<= (const PublishEvent& rhs) const
     {
-      ros_sub_.shutdown();
+      return time <= rhs.time;
     }
 
-    std::string getTopic() const
+    bool operator> (const PublishEvent& rhs) const
     {
-      return ros_sub_.getTopic();
+      return time > rhs.time;
     }
 
-    /**
-     * \brief Returns the number of publishers this subscriber is connected to
-     */
-    uint32_t getNumPublishers() const
+    bool operator>= (const PublishEvent& rhs) const
     {
-      return ros_sub_.getNumPublishers();
+      return time >= rhs.time;
+    }
+
+    bool operator== (const PublishEvent& rhs) const
+    {
+      return time == rhs.time && msg == rhs.msg;
     }
 
     operator void*() const
     {
-      return (void *) ros_sub_;
+      return (time.isValid() && !time.isZero() && msg) ? (void*)1 : (void*)0;
     }
-
-    bool operator<(const ros::Subscriber& rhs) const
-    {
-      return ros_sub_ < rhs;
-    }
-
-    bool operator<(const Subscriber& rhs) const
-    {
-      return ros_sub_ < rhs.ros_sub_;
-    }
-
-    bool operator==(const ros::Subscriber& rhs) const
-    {
-      return ros_sub_ == rhs;
-    }
-
-    bool operator==(const Subscriber& rhs) const
-    {
-      return ros_sub_ == rhs.ros_sub_;
-    }
-
-    bool operator!=(const ros::Subscriber& rhs) const
-    {
-      return ros_sub_ != rhs;
-    }
-
-    bool operator!=(const Subscriber& rhs) const
-    {
-      return ros_sub_ != rhs.ros_sub_;
-    }
-
-  private:
-    Subscriber(const ros::Subscriber& ros_sub,
-               const History::HolderPtr& history_sub);
-
-    ros::Subscriber ros_sub_;
-
-    History::HolderPtr history_sub_;
   };
 } // namespace haros
 
-#endif // HAROS_ASSERT_SUBSCRIBER_H
+#endif // HAROS_ASSERT_PUBLISH_EVENT_H

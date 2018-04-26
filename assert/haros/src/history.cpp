@@ -38,12 +38,11 @@
 
 namespace haros
 {
-History::History() {}
-
 template<class M>
 History<M> History<M>::instance;
 
-MessageEvent History::lastReceive(const std::string& topic)
+template<class M>
+MessageEvent History<M>::lastReceive(const std::string& topic)
 {
   boost::mutex::scoped_lock lock(sub_mutex_);
   std::map<std::string, Entry>::iterator it = received_.find(topic);
@@ -54,8 +53,8 @@ MessageEvent History::lastReceive(const std::string& topic)
   return MessageEvent();
 }
 
-History::HolderPtr History::subscribe(const std::string& topic,
-                                      const uint32_t queue_size)
+template<class M>
+History<M>::HolderPtr History<M>::subscribe(const std::string& topic)
 {
   boost::mutex::scoped_lock lock(sub_mutex_);
   History::HolderPtr sub_ptr;
@@ -73,7 +72,7 @@ History::HolderPtr History::subscribe(const std::string& topic,
   // at this point, the history callback does not exist anymore
   ros::SubscribeOptions ops;
   ops.topic = topic;
-  ops.queue_size = queue_size;
+  ops.queue_size = 1; // record the most recent message
   ops.md5sum = ros::message_traits::md5sum<topic_tools::ShapeShifter>();
   ops.datatype = ros::message_traits::datatype<topic_tools::ShapeShifter>();
   // bind makes a copy of the topic string, so it is safe to use it
@@ -95,8 +94,9 @@ History::HolderPtr History::subscribe(const std::string& topic,
 // relevant:
 // http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers#MessageEvent_.5BROS_1.1.2B-.5D
 // https://answers.ros.org/question/273964/using-shapeshifter-messageevent-and-boost-bind-together-to-pass-arguments-to-callback/
-void History::receive(const std::string& topic,
-    const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event)
+template<class M>
+void History<M>::receive(const std::string& topic,
+                         const ros::MessageEvent<M const>& msg_event)
 {
   boost::mutex::scoped_lock lock(sub_mutex_);
   Entry& e = received_[topic];

@@ -35,10 +35,6 @@
 #ifndef HAROS_ASSERT_MESSAGE_EVENT_H
 #define HAROS_ASSERT_MESSAGE_EVENT_H
 
-#include <boost/shared_ptr.hpp>
-
-#include <topic_tools/shape_shifter.h>
-
 namespace haros
 {
   /** This is supposed to be a very lightweight object.
@@ -46,39 +42,68 @@ namespace haros
    * Thus, it is copyable.
    * Can also be stored directly, instead of storing a pointer.
    */
-  class MessageEvent
-  {
-  public:
-    MessageEvent();
-    MessageEvent(const ros::Time time, const topic_tools::ShapeShifter::ConstPtr msg);
-
-    template<class M>
-    boost::shared_ptr<M> msg();
-
-    bool hasOccurred();
-
-    bool operator< (const MessageEvent& me) const;
-    bool operator<= (const MessageEvent& me) const;
-    bool operator> (const MessageEvent& me) const;
-    bool operator>= (const MessageEvent& me) const;
-    bool operator== (const MessageEvent& me) const;
-
-    operator void*() const;
-
-  private:
-    ros::Time time_;
-    topic_tools::ShapeShifter::ConstPtr msg_;
-  };
-
   template<class M>
-  boost::shared_ptr<M> MessageEvent::msg()
+  struct MessageEvent
   {
-    if (msg_)
+    //---------------------------------------------------------------------------
+    // Member Variables
+    //---------------------------------------------------------------------------
+
+    const ros::Time time;
+    const M::ConstPtr msg;
+
+    //---------------------------------------------------------------------------
+    // Constructors
+    //---------------------------------------------------------------------------
+
+    MessageEvent()
+    : time(ros::Time(0))
+    {}
+
+    MessageEvent(const ros::Time& _time, const M::ConstPtr& _msg)
+    : time(_time)
+    , msg(_msg)
+    {}
+
+    //---------------------------------------------------------------------------
+    // Methods and Operators
+    //---------------------------------------------------------------------------
+
+    bool hasOccurred()
     {
-      return msg_->instantiate<M>();
+      return time.isValid() && !time.isZero();
     }
-    return boost::shared_ptr<M>();
-  }
+
+    bool operator< (const MessageEvent& rhs) const
+    {
+      return time < rhs.time;
+    }
+
+    bool operator<= (const MessageEvent& rhs) const
+    {
+      return time <= rhs.time;
+    }
+
+    bool operator> (const MessageEvent& rhs) const
+    {
+      return time > rhs.time;
+    }
+
+    bool operator>= (const MessageEvent& rhs) const
+    {
+      return time >= rhs.time;
+    }
+
+    bool operator== (const MessageEvent& rhs) const
+    {
+      return time == rhs.time && msg == rhs.msg;
+    }
+
+    operator void*() const
+    {
+      return (time.isValid() && !time.isZero() && msg) ? (void*)1 : (void*)0;
+    }
+  };
 } // namespace haros
 
 #endif // HAROS_ASSERT_MESSAGE_EVENT_H

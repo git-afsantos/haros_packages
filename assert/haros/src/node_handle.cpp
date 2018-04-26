@@ -38,6 +38,10 @@
 
 namespace haros
 {
+//-------------------------------------------------------------------------------
+// Constructors and Destructors
+//-------------------------------------------------------------------------------
+
 NodeHandle::NodeHandle(const std::string& ns, const M_string& remappings)
 : ros::NodeHandle(ns, remappings)
 {}
@@ -60,6 +64,12 @@ NodeHandle::NodeHandle(const ros::NodeHandle& parent, const std::string& ns,
 {}
 
 NodeHandle::~NodeHandle() {}
+
+NodeHandle& NodeHandle::operator=(const NodeHandle& rhs)
+{
+  node_handle_ = rhs.node_handle_;
+  return *this;
+}
 
 Publisher NodeHandle::advertise(ros::AdvertiseOptions& ops)
 {

@@ -44,9 +44,8 @@
 
 #include <ros/ros.h>
 
-#include <topic_tools/shape_shifter.h>
-
 #include "haros/message_event.h"
+#include "haros/publish_event.h"
 
 namespace haros
 {
@@ -62,7 +61,7 @@ namespace haros
     static History<M> instance;
 
 
-    MessageEvent lastReceive(const std::string& topic);
+    MessageEvent<M> lastReceive(const std::string& topic);
 
     // This is needed in case the client assigns multiple callbacks
     // to the same topic. We must not invalidate previous pointers,
@@ -79,14 +78,14 @@ namespace haros
 
     typedef boost::shared_ptr<SubscriberHolder> HolderPtr;
 
-    HolderPtr subscribe(const std::string& topic, const uint32_t queue_size);
+    HolderPtr subscribe(const std::string& topic);
 
   private:
-    History();
+    History() {}
 
     void receive(const std::string& topic,
-                 const ros::MessageEvent<topic_tools::ShapeShifter const>& msg_event);
-    // msg_event.getMessage() is of type topic_tools::ShapeShifter::ConstPtr
+                 const ros::MessageEvent<M const>& msg_event);
+    // msg_event.getMessage() is of type M::ConstPtr
 
     struct Entry
     {
@@ -99,6 +98,9 @@ namespace haros
 
     boost::mutex sub_mutex_;
     std::map<std::string, Entry> received_;
+
+    friend class Subscriber<M>;
+    friend class Publisher<M>;
   };
 } // namespace haros
 
