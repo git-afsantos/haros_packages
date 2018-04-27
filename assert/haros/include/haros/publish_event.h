@@ -51,8 +51,8 @@ namespace haros
     // Member Variables
     //---------------------------------------------------------------------------
 
-    const ros::Time time;
-    const boost::shared_ptr<M> msg;
+    ros::Time time;
+    boost::shared_ptr<M> msg;
 
     //---------------------------------------------------------------------------
     // Constructors
@@ -71,7 +71,7 @@ namespace haros
     // Methods and Operators
     //---------------------------------------------------------------------------
 
-    bool hasOccurred()
+    bool hasOccurred() const
     {
       return time.isValid() && !time.isZero();
     }

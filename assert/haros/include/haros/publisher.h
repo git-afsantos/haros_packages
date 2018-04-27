@@ -141,7 +141,7 @@ namespace haros
      */
     uint32_t getNumSubscribers() const
     {
-      return ros_pub_.getNumPublishers();
+      return ros_pub_.getNumSubscribers();
     }
 
     /**

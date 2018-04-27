@@ -49,8 +49,8 @@ namespace haros
     // Member Variables
     //---------------------------------------------------------------------------
 
-    const ros::Time time;
-    const typename M::ConstPtr msg;
+    ros::Time time;
+    typename M::ConstPtr msg;
 
     //---------------------------------------------------------------------------
     // Constructors
@@ -69,7 +69,7 @@ namespace haros
     // Methods and Operators
     //---------------------------------------------------------------------------
 
-    bool hasOccurred()
+    bool hasOccurred() const
     {
       return time.isValid() && !time.isZero();
     }
