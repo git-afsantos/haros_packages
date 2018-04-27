@@ -74,12 +74,12 @@ namespace haros
     // HAROS Interface
     //---------------------------------------------------------------------------
 
-    MessageEvent<M> lastReceive()
+    MessageEvent<M> lastReceive() const
     {
-      return History<M>::instance.lastReceive(getTopic());
+      return History<M>::instance.lastReceive(ros_sub_.getTopic());
     }
 
-    typename M::ConstPtr lastMessage()
+    typename M::ConstPtr lastMessage() const
     {
       return lastReceive().msg;
     }

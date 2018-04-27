@@ -49,15 +49,146 @@ namespace haros
   class Publisher
   {
   public:
+    //---------------------------------------------------------------------------
+    // Constructors and Destructors
+    //---------------------------------------------------------------------------
+
     Publisher() {}
-    Publisher(const ros::Publisher& rhs) {}
-    Publisher(const Publisher<M>& rhs) {}
+
+    Publisher(const ros::Publisher& pub)
+    : ros_pub_(pub)
+    {}
+
+    Publisher(const Publisher<M>& rhs)
+    : ros_pub_(rhs.ros_pub_)
+    {}
+
     ~Publisher() {}
 
-    /** */
+    //---------------------------------------------------------------------------
+    // HAROS Interface
+    //---------------------------------------------------------------------------
+
+    PublishEvent<M> lastPublish() const
+    {
+      return History<M>::instance.lastPublish(ros_pub_.getTopic());
+    }
+
+    boost::shared_ptr<M> lastMessage() const
+    {
+      return lastPublish().msg;
+    }
+
+    //---------------------------------------------------------------------------
+    // ROS Publisher Interface
+    //---------------------------------------------------------------------------
+
+    /**
+     * \brief Publish a message on the topic associated with this Publisher.
+     *
+     * This version of publish will allow fast intra-process message-passing in the future,
+     * so you may not mutate the message after it has been passed in here (since it will be
+     * passed directly into a callback function)
+     *
+     */
     void publish(const boost::shared_ptr<M>& message) const
     {
+      if (ros_pub_)
+      {
+        ros_pub_.publish(message);
+        History<M>::instance.publish(ros_pub_.getTopic(), message);
+      }
     }
+
+    /**
+     * \brief Publish a message on the topic associated with this Publisher.
+     */
+    void publish(const M& message) const
+    {
+      if (ros_pub_)
+      {
+        ros_pub_.publish(message);
+        History<M>::instance.publish(ros_pub_.getTopic(),
+                                     boost::shared_ptr<M>(new M(message)));
+      }
+    }
+
+    /**
+     * \brief Shutdown the advertisement associated with this Publisher
+     *
+     * This method usually does not need to be explicitly called, as automatic shutdown happens when
+     * all copies of this Publisher go out of scope
+     *
+     * This method overrides the automatic reference counted unadvertise, and does so immediately.
+     * \note Note that if multiple advertisements were made through NodeHandle::advertise(), this will
+     * only remove the one associated with this Publisher
+     */
+    void shutdown()
+    {
+      ros_pub_.shutdown();
+    }
+
+    /**
+     * \brief Returns the topic that this Publisher will publish on.
+     */
+    std::string getTopic() const
+    {
+      return ros_pub_.getTopic();
+    }
+
+    /**
+     * \brief Returns the number of subscribers that are currently connected to this Publisher
+     */
+    uint32_t getNumSubscribers() const
+    {
+      return ros_pub_.getNumPublishers();
+    }
+
+    /**
+     * \brief Returns whether or not this topic is latched
+     */
+    bool isLatched() const
+    {
+      return ros_pub_.isLatched();
+    }
+
+    operator void*() const
+    {
+      return (void *) ros_pub_;
+    }
+
+    bool operator<(const ros::Publisher& rhs) const
+    {
+      return ros_pub_ < rhs;
+    }
+
+    bool operator<(const Publisher& rhs) const
+    {
+      return ros_pub_ < rhs.ros_pub_;
+    }
+
+    bool operator==(const ros::Publisher& rhs) const
+    {
+      return ros_pub_ == rhs;
+    }
+
+    bool operator==(const Publisher& rhs) const
+    {
+      return ros_pub_ == rhs.ros_pub_;
+    }
+
+    bool operator!=(const ros::Publisher& rhs) const
+    {
+      return ros_pub_ != rhs;
+    }
+
+    bool operator!=(const Publisher& rhs) const
+    {
+      return ros_pub_ != rhs.ros_pub_;
+    }
+
+  private:
+    ros::Publisher ros_pub_;
   };
 } // namespace haros
 

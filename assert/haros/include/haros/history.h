@@ -69,7 +69,19 @@ namespace haros
   public:
     static History<M> instance;
 
-    MessageEvent<M> lastReceive(const std::string& topic)
+    MessageEvent<M> lastPublish(const std::string& topic) const
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublishEvent<M>>::iterator it =
+          published_.find(topic);
+      if (it != published_.end())
+      {
+        return PublishEvent<M>(it->second.time, it->second.msg);
+      }
+      return PublishEvent<M>();
+    }
+
+    MessageEvent<M> lastReceive(const std::string& topic) const
     {
       boost::mutex::scoped_lock lock(sub_mutex_);
       typename std::map<std::string, Entry>::iterator it = received_.find(topic);
@@ -81,8 +93,28 @@ namespace haros
     }
 
   private:
+    //--------------------------------------------------------------------------
+    // Constructors
+    //--------------------------------------------------------------------------
     History() {}
     History(const History& rhs) {}
+
+    //--------------------------------------------------------------------------
+    // Publisher Interface
+    //--------------------------------------------------------------------------
+
+    boost::mutex pub_mutex_;
+    std::map<std::string, PublishEvent<M>> published_;
+
+    void publish(const std::string& topic, const boost:shared_ptr<M>& msg)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      published_[topic] = PublishEvent<M>(ros::Time::now(), msg);
+    }
+
+    //--------------------------------------------------------------------------
+    // Subscriber Interface
+    //--------------------------------------------------------------------------
 
     // This is needed in case the client assigns multiple callbacks
     // to the same topic. We must not invalidate previous pointers,
