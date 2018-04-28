@@ -35,28 +35,12 @@
 #ifndef HAROS_ASSERT_HAROS_H
 #define HAROS_ASSERT_HAROS_H
 
-#include <cassert>
+#include <ros/ros.h>
 
 #include "haros/message_event.h"
 #include "haros/publish_event.h"
 #include "haros/history.h"
 #include "haros/publisher.h"
 #include "haros/subscriber.h"
-
-namespace haros
-{
-void fact(bool condition)
-{
-  assert(condition);
-}
-
-void belief(bool condition)
-{
-  if (!condition)
-  {
-    ROS_WARN("Violated assumption.");
-  }
-}
-} // namespace haros
 
 #endif // HAROS_ASSERT_HAROS_H
