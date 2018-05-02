@@ -39,7 +39,11 @@
 
 #include "haros/message_event.h"
 #include "haros/publish_event.h"
+
+#ifndef NDEBUG
 #include "haros/history.h"
+#endif
+
 #include "haros/publisher.h"
 #include "haros/subscriber.h"
 

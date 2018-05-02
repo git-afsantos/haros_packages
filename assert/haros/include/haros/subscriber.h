@@ -41,7 +41,11 @@
 
 #include <ros/ros.h>
 
+#include "haros/message_event.h"
+
+#ifndef NDEBUG
 #include "haros/history.h"
+#endif
 
 namespace haros
 {
@@ -58,14 +62,19 @@ namespace haros
     Subscriber(const ros::Subscriber& sub)
     : ros_sub_(sub)
     {
+#ifndef NDEBUG
       if (sub)
       {
         history_sub_ = History<M>::instance.subscribe(sub.getTopic());
       }
+#endif
     }
 
     Subscriber(const Subscriber<M>& rhs)
-    : ros_sub_(rhs.ros_sub_), history_sub_(rhs.history_sub_)
+    : ros_sub_(rhs.ros_sub_)
+#ifndef NDEBUG
+    , history_sub_(rhs.history_sub_)
+#endif
     {}
 
     ~Subscriber() {}
@@ -76,12 +85,20 @@ namespace haros
 
     MessageEvent<M> lastReceive() const
     {
+#ifdef NDEBUG
+      return MessageEvent<M>();
+#else
       return History<M>::instance.lastReceive(ros_sub_.getTopic());
+#endif
     }
 
     typename M::ConstPtr lastMessage() const
     {
+#ifdef NDEBUG
+      return typename M::ConstPtr();
+#else
       return lastReceive().msg;
+#endif
     }
 
     //---------------------------------------------------------------------------
@@ -154,7 +171,9 @@ namespace haros
   private:
     ros::Subscriber ros_sub_;
 
+#ifndef NDEBUG
     typename History<M>::HolderPtr history_sub_;
+#endif
   };
 } // namespace haros
 

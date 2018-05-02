@@ -41,7 +41,11 @@
 
 #include <ros/ros.h>
 
+#include "haros/publish_event.h"
+
+#ifndef NDEBUG
 #include "haros/history.h"
+#endif
 
 namespace haros
 {
@@ -71,12 +75,20 @@ namespace haros
 
     PublishEvent<M> lastPublish() const
     {
+#ifdef NDEBUG
+      return PublishEvent<M>();
+#else
       return History<M>::instance.lastPublish(ros_pub_.getTopic());
+#endif
     }
 
     boost::shared_ptr<M> lastMessage() const
     {
+#ifdef NDEBUG
+      return boost::shared_ptr<M>();
+#else
       return lastPublish().msg;
+#endif
     }
 
     //---------------------------------------------------------------------------
@@ -96,7 +108,9 @@ namespace haros
       if (ros_pub_)
       {
         ros_pub_.publish(message);
+#ifndef NDEBUG
         History<M>::instance.publish(ros_pub_.getTopic(), message);
+#endif
       }
     }
 
@@ -108,8 +122,10 @@ namespace haros
       if (ros_pub_)
       {
         ros_pub_.publish(message);
+#ifndef NDEBUG
         History<M>::instance.publish(ros_pub_.getTopic(),
                                      boost::shared_ptr<M>(new M(message)));
+#endif
       }
     }
 
