@@ -83,6 +83,13 @@ namespace haros
     // HAROS Interface
     //---------------------------------------------------------------------------
 
+    void bookmark(const std::string& key = std::string()) const
+    {
+#ifndef NDEBUG
+      History<M>::instance.saveNextReceive(ros_sub_.getTopic(), key);
+#endif
+    }
+
     MessageEvent<M> lastReceive() const
     {
 #ifdef NDEBUG
@@ -92,12 +99,30 @@ namespace haros
 #endif
     }
 
+    MessageEvent<M> lastReceive(const std::string& bookmark) const
+    {
+#ifdef NDEBUG
+      return MessageEvent<M>();
+#else
+      return History<M>::instance.lastReceive(ros_sub_.getTopic(), bookmark);
+#endif
+    }
+
     typename M::ConstPtr lastMessage() const
     {
 #ifdef NDEBUG
       return typename M::ConstPtr();
 #else
       return lastReceive().msg;
+#endif
+    }
+
+    typename M::ConstPtr lastMessage(const std::string& bookmark) const
+    {
+#ifdef NDEBUG
+      return typename M::ConstPtr();
+#else
+      return lastReceive(bookmark).msg;
 #endif
     }
 

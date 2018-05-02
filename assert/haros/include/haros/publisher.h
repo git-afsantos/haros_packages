@@ -73,6 +73,13 @@ namespace haros
     // HAROS Interface
     //---------------------------------------------------------------------------
 
+    void bookmark(const std::string& key = std::string()) const
+    {
+#ifndef NDEBUG
+      History<M>::instance.saveNextPublish(ros_pub_.getTopic(), key);
+#endif
+    }
+
     PublishEvent<M> lastPublish() const
     {
 #ifdef NDEBUG
@@ -82,12 +89,30 @@ namespace haros
 #endif
     }
 
+    PublishEvent<M> lastPublish(const std::string& bookmark) const
+    {
+#ifdef NDEBUG
+      return PublishEvent<M>();
+#else
+      return History<M>::instance.lastPublish(ros_pub_.getTopic(), bookmark);
+#endif
+    }
+
     boost::shared_ptr<M> lastMessage() const
     {
 #ifdef NDEBUG
       return boost::shared_ptr<M>();
 #else
       return lastPublish().msg;
+#endif
+    }
+
+    boost::shared_ptr<M> lastMessage(const std::string& bookmark) const
+    {
+#ifdef NDEBUG
+      return boost::shared_ptr<M>();
+#else
+      return lastPublish(bookmark).msg;
 #endif
     }
 

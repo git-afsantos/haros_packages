@@ -21,15 +21,27 @@ public:
 
     void callback(const std_msgs::Int32::ConstPtr& msg)
     {
+        if (msg->data % 5 == 0)
+            chatter.bookmark("5n");
         haros::MessageEvent<std_msgs::Int32> evt = chatter.lastReceive();
         ROS_INFO_STREAM("Last receive has occurred: " << evt.hasOccurred());
         if (evt.msg)
             ROS_INFO_STREAM("Last receive data: " << evt.msg->data);
         else
             ROS_INFO("Last receive has no data.");
+
+        evt = chatter.lastReceive("5n");
+        ROS_INFO_STREAM("Last 5N receive has occurred: " << evt.hasOccurred());
+        if (evt.msg)
+            ROS_INFO_STREAM("Last 5N receive data: " << evt.msg->data);
+        else
+            ROS_INFO("Last 5N receive has no data.");
         
-        ROS_ASSERT(!chatter.lastReceive() ||
-                    chatter.lastMessage()->data < msg->data);
+        ROS_ASSERT(!chatter.lastReceive()
+                   || chatter.lastMessage()->data < msg->data);
+        ROS_ASSERT(!chatter.lastReceive("5n")
+                   || chatter.lastMessage("5n")->data % 5 == 0);
+        ROS_ASSERT(chatter.lastReceive("5n") <= chatter.lastReceive());
     }
 
     void callback2(const std_msgs::Int32::ConstPtr& msg)

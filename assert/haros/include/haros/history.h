@@ -36,7 +36,9 @@
 #define HAROS_ASSERT_HISTORY_H
 
 #include <string>
+#include <list>
 #include <map>
+#include <stdexcept>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -69,25 +71,68 @@ namespace haros
   public:
     static History<M> instance;
 
+    //--------------------------------------------------------------------------
+    // Publish Events
+    //--------------------------------------------------------------------------
+
     PublishEvent<M> lastPublish(const std::string& topic)
     {
       boost::mutex::scoped_lock lock(pub_mutex_);
-      typename std::map<std::string, PublishEvent<M> >::iterator it =
+      typename std::map<std::string, PublisherEntry>::iterator it =
           published_.find(topic);
       if (it != published_.end())
       {
-        return PublishEvent<M>(it->second);
+        return PublishEvent<M>(it->second.time, it->second.msg);
       }
       return PublishEvent<M>();
     }
 
+    PublishEvent<M> lastPublish(const std::string& topic,
+                                const std::string& bookmark)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it =
+          published_.find(topic);
+      if (it != published_.end())
+      {
+        typename std::map<std::string, std::list<PublishEvent<M> > >::iterator it2 =
+            it->second.bookmarks.find(bookmark);
+        if (it2 != it->second.bookmarks.end() && !it2->second.empty())
+        {
+          return PublishEvent<M>(it2->second.front());
+        }
+      }
+      return PublishEvent<M>();
+    }
+
+    //--------------------------------------------------------------------------
+    // Receive Events
+    //--------------------------------------------------------------------------
+
     MessageEvent<M> lastReceive(const std::string& topic)
     {
       boost::mutex::scoped_lock lock(sub_mutex_);
-      typename std::map<std::string, Entry>::iterator it = received_.find(topic);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
         return MessageEvent<M>(it->second.time, it->second.msg);
+      }
+      return MessageEvent<M>();
+    }
+
+    MessageEvent<M> lastReceive(const std::string& topic,
+                                const std::string& bookmark)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        typename std::map<std::string, std::list<MessageEvent<M> > >::iterator it2 =
+            it->second.bookmarks.find(bookmark);
+        if (it2 != it->second.bookmarks.end() && !it2->second.empty())
+        {
+          return MessageEvent<M>(it2->second.front());
+        }
       }
       return MessageEvent<M>();
     }
@@ -103,13 +148,46 @@ namespace haros
     // Publisher Interface
     //--------------------------------------------------------------------------
 
+    struct PublisherEntry
+    {
+      ros::Time time;
+      boost::shared_ptr<M> msg;
+      std::map<std::string, std::list<PublishEvent<M> > > bookmarks;
+      bool save_next;
+      std::string bookmark_key;
+
+      PublisherEntry() : time(ros::Time(0)), save_next(false) {}
+    };
+
     boost::mutex pub_mutex_;
-    std::map<std::string, PublishEvent<M> > published_;
+    std::map<std::string, PublisherEntry> published_;
+
+    void saveNextPublish(const std::string& topic, const std::string& key)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        it->second.save_next = true;
+        it->second.bookmark_key = key;
+      }
+      else
+      {
+        throw std::out_of_range(topic);
+      }
+    }
 
     void publish(const std::string& topic, const boost::shared_ptr<M>& msg)
     {
       boost::mutex::scoped_lock lock(pub_mutex_);
-      published_[topic] = PublishEvent<M>(ros::Time::now(), msg);
+      PublisherEntry& e = published_[topic];
+      e.time = ros::Time::now();
+      e.msg = msg;
+      if (e.save_next)
+      {
+        e.bookmarks[e.bookmark_key].push_front(PublishEvent<M>(e.time, e.msg));
+        e.save_next = false;
+      }
     }
 
     //--------------------------------------------------------------------------
@@ -131,11 +209,41 @@ namespace haros
 
     typedef boost::shared_ptr<SubscriberHolder> HolderPtr;
 
+    struct SubscriberEntry
+    {
+      boost::weak_ptr<SubscriberHolder> sub;
+      ros::Time time;
+      typename M::ConstPtr msg;
+      std::map<std::string, std::list<MessageEvent<M> > > bookmarks;
+      bool save_next;
+      std::string bookmark_key;
+
+      SubscriberEntry() : time(ros::Time(0)), save_next(false) {}
+    };
+
+    boost::mutex sub_mutex_;
+    std::map<std::string, SubscriberEntry> received_;
+
+    void saveNextReceive(const std::string& topic, const std::string& key)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        it->second.save_next = true;
+        it->second.bookmark_key = key;
+      }
+      else
+      {
+        throw std::out_of_range(topic);
+      }
+    }
+
     HolderPtr subscribe(const std::string& topic)
     {
       boost::mutex::scoped_lock lock(sub_mutex_);
       HolderPtr sub_ptr;
-      typename std::map<std::string, Entry>::iterator it = received_.find(topic);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
         sub_ptr = it->second.sub.lock();
@@ -155,7 +263,7 @@ namespace haros
         sub_ptr.reset(new SubscriberHolder());
       }
       sub_ptr->sub = sub;
-      Entry& e = received_[topic];
+      SubscriberEntry& e = received_[topic];
       e.sub = sub_ptr;
       return sub_ptr;
     }
@@ -167,22 +275,15 @@ namespace haros
                  const ros::MessageEvent<M const>& msg_event)
     {
       boost::mutex::scoped_lock lock(sub_mutex_);
-      Entry& e = received_[topic];
+      SubscriberEntry& e = received_[topic];
       e.time = msg_event.getReceiptTime();
       e.msg = msg_event.getMessage();
+      if (e.save_next)
+      {
+        e.bookmarks[e.bookmark_key].push_front(MessageEvent<M>(e.time, e.msg));
+        e.save_next = false;
+      }
     }
-
-    struct Entry
-    {
-      boost::weak_ptr<SubscriberHolder> sub;
-      ros::Time time;
-      typename M::ConstPtr msg;
-
-      Entry() : time(ros::Time(0)) {}
-    };
-
-    boost::mutex sub_mutex_;
-    std::map<std::string, Entry> received_;
 
     friend class Subscriber<M>;
     friend class Publisher<M>;
