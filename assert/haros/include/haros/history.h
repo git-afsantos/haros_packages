@@ -36,7 +36,6 @@
 #define HAROS_ASSERT_HISTORY_H
 
 #include <string>
-#include <list>
 #include <map>
 #include <stdexcept>
 
@@ -95,11 +94,11 @@ namespace haros
           published_.find(topic);
       if (it != published_.end())
       {
-        typename std::map<std::string, std::list<PublishEvent<M> > >::iterator it2 =
+        typename std::map<std::string, PublishEvent<M> >::iterator it2 =
             it->second.bookmarks.find(bookmark);
-        if (it2 != it->second.bookmarks.end() && !it2->second.empty())
+        if (it2 != it->second.bookmarks.end())
         {
-          return PublishEvent<M>(it2->second.front());
+          return PublishEvent<M>(it2->second);
         }
       }
       return PublishEvent<M>();
@@ -127,11 +126,11 @@ namespace haros
       typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
-        typename std::map<std::string, std::list<MessageEvent<M> > >::iterator it2 =
+        typename std::map<std::string, MessageEvent<M> >::iterator it2 =
             it->second.bookmarks.find(bookmark);
-        if (it2 != it->second.bookmarks.end() && !it2->second.empty())
+        if (it2 != it->second.bookmarks.end())
         {
-          return MessageEvent<M>(it2->second.front());
+          return MessageEvent<M>(it2->second);
         }
       }
       return MessageEvent<M>();
@@ -152,7 +151,7 @@ namespace haros
     {
       ros::Time time;
       boost::shared_ptr<M> msg;
-      std::map<std::string, std::list<PublishEvent<M> > > bookmarks;
+      std::map<std::string, PublishEvent<M> > bookmarks;
       bool save_next;
       std::string bookmark_key;
 
@@ -177,6 +176,34 @@ namespace haros
       }
     }
 
+    void forgetPublish(const std::string& topic, const std::string& key)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        it->second.bookmarks.erase(key);
+      }
+      else
+      {
+        throw std::out_of_range(topic);
+      }
+    }
+
+    void forgetAllPublish(const std::string& topic)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        it->second.bookmarks.clear();
+      }
+      else
+      {
+        throw std::out_of_range(topic);
+      }
+    }
+
     void publish(const std::string& topic, const boost::shared_ptr<M>& msg)
     {
       boost::mutex::scoped_lock lock(pub_mutex_);
@@ -185,7 +212,7 @@ namespace haros
       e.msg = msg;
       if (e.save_next)
       {
-        e.bookmarks[e.bookmark_key].push_front(PublishEvent<M>(e.time, e.msg));
+        e.bookmarks[e.bookmark_key] = PublishEvent<M>(e.time, e.msg);
         e.save_next = false;
       }
     }
@@ -214,7 +241,7 @@ namespace haros
       boost::weak_ptr<SubscriberHolder> sub;
       ros::Time time;
       typename M::ConstPtr msg;
-      std::map<std::string, std::list<MessageEvent<M> > > bookmarks;
+      std::map<std::string, MessageEvent<M> > bookmarks;
       bool save_next;
       std::string bookmark_key;
 
@@ -232,6 +259,34 @@ namespace haros
       {
         it->second.save_next = true;
         it->second.bookmark_key = key;
+      }
+      else
+      {
+        throw std::out_of_range(topic);
+      }
+    }
+
+    void forgetReceive(const std::string& topic, const std::string& key)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        it->second.bookmarks.erase(key);
+      }
+      else
+      {
+        throw std::out_of_range(topic);
+      }
+    }
+
+    void forgetAllReceive(const std::string& topic)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        it->second.bookmarks.clear();
       }
       else
       {
@@ -280,7 +335,7 @@ namespace haros
       e.msg = msg_event.getMessage();
       if (e.save_next)
       {
-        e.bookmarks[e.bookmark_key].push_front(MessageEvent<M>(e.time, e.msg));
+        e.bookmarks[e.bookmark_key] = MessageEvent<M>(e.time, e.msg);
         e.save_next = false;
       }
     }

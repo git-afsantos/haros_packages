@@ -90,6 +90,20 @@ namespace haros
 #endif
     }
 
+    void forget(const std::string& key = std::string()) const
+    {
+#ifndef NDEBUG
+      History<M>::instance.forgetReceive(ros_sub_.getTopic(), key);
+#endif
+    }
+
+    void forgetAll() const
+    {
+#ifndef NDEBUG
+      History<M>::instance.forgetAllReceive(ros_sub_.getTopic());
+#endif
+    }
+
     MessageEvent<M> lastReceive() const
     {
 #ifdef NDEBUG

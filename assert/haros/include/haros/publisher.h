@@ -80,6 +80,20 @@ namespace haros
 #endif
     }
 
+    void forget(const std::string& key = std::string()) const
+    {
+#ifndef NDEBUG
+      History<M>::instance.forgetPublish(ros_pub_.getTopic(), key);
+#endif
+    }
+
+    void forgetAll() const
+    {
+#ifndef NDEBUG
+      History<M>::instance.forgetAllPublish(ros_pub_.getTopic());
+#endif
+    }
+
     PublishEvent<M> lastPublish() const
     {
 #ifdef NDEBUG
