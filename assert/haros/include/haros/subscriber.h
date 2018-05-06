@@ -53,9 +53,9 @@ namespace haros
   class Subscriber
   {
   public:
-    //---------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     // Constructors and Destructors
-    //---------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     Subscriber() {}
 
@@ -79,9 +79,9 @@ namespace haros
 
     ~Subscriber() {}
 
-    //---------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     // HAROS Interface
-    //---------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void bookmark(const std::string& key = std::string()) const
     {
@@ -122,6 +122,67 @@ namespace haros
 #endif
     }
 
+    template<class T>
+    MessageEvent<M> lastReceiveWhere(bool(T::*pred)(MessageEvent<M>), T* obj) const
+    {
+#ifdef NDEBUG
+      return MessageEvent<M>();
+#else
+      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred, obj);
+#endif
+    }
+
+    template<class T>
+    MessageEvent<M> lastReceiveWhere(bool(T::*pred)(MessageEvent<M>) const, T* obj) const
+    {
+#ifdef NDEBUG
+      return MessageEvent<M>();
+#else
+      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred, obj);
+#endif
+    }
+
+    template<class T>
+    MessageEvent<M> lastReceiveWhere(bool(T::*pred)(MessageEvent<M>),
+                                     const boost::shared_ptr<T>& obj) const
+    {
+#ifdef NDEBUG
+      return MessageEvent<M>();
+#else
+      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred, obj);
+#endif
+    }
+
+    template<class T>
+    MessageEvent<M> lastReceiveWhere(bool(T::*pred)(MessageEvent<M>) const,
+                                     const boost::shared_ptr<T>& obj) const
+    {
+#ifdef NDEBUG
+      return MessageEvent<M>();
+#else
+      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred, obj);
+#endif
+    }
+
+    MessageEvent<M> lastReceiveWhere(bool(*pred)(MessageEvent<M>)) const
+    {
+#ifdef NDEBUG
+      return MessageEvent<M>();
+#else
+      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred);
+#endif
+    }
+
+    MessageEvent<M> lastReceiveWhere(
+        const boost::function<bool (MessageEvent<M>)>& pred) const
+    {
+#ifdef NDEBUG
+      return MessageEvent<M>();
+#else
+      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred);
+#endif
+    }
+
     typename M::ConstPtr lastMessage() const
     {
 #ifdef NDEBUG
@@ -140,9 +201,70 @@ namespace haros
 #endif
     }
 
-    //---------------------------------------------------------------------------
+    template<class T>
+    typename M::ConstPtr lastMessageWhere(bool(T::*pred)(MessageEvent<M>), T* obj) const
+    {
+#ifdef NDEBUG
+      return typename M::ConstPtr();
+#else
+      return lastReceive(pred, obj).msg;
+#endif
+    }
+
+    template<class T>
+    typename M::ConstPtr lastMessageWhere(bool(T::*pred)(MessageEvent<M>) const, T* obj) const
+    {
+#ifdef NDEBUG
+      return typename M::ConstPtr();
+#else
+      return lastReceive(pred, obj).msg;
+#endif
+    }
+
+    template<class T>
+    typename M::ConstPtr lastMessageWhere(bool(T::*pred)(MessageEvent<M>),
+                                          const boost::shared_ptr<T>& obj) const
+    {
+#ifdef NDEBUG
+      return typename M::ConstPtr();
+#else
+      return lastReceive(pred, obj).msg;
+#endif
+    }
+
+    template<class T>
+    typename M::ConstPtr lastMessageWhere(bool(T::*pred)(MessageEvent<M>) const,
+                                          const boost::shared_ptr<T>& obj) const
+    {
+#ifdef NDEBUG
+      return typename M::ConstPtr();
+#else
+      return lastReceive(pred, obj).msg;
+#endif
+    }
+
+    typename M::ConstPtr lastMessageWhere(bool(*pred)(MessageEvent<M>)) const
+    {
+#ifdef NDEBUG
+      return typename M::ConstPtr();
+#else
+      return lastReceive(pred).msg;
+#endif
+    }
+
+    typename M::ConstPtr lastMessageWhere(
+        const boost::function<bool (MessageEvent<M>)>& pred) const
+    {
+#ifdef NDEBUG
+      return typename M::ConstPtr();
+#else
+      return lastReceive(pred).msg;
+#endif
+    }
+
+    //--------------------------------------------------------------------------
     // ROS Subscriber Interface
-    //---------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     /**
      * \brief Unsubscribe the callback associated with this Subscriber

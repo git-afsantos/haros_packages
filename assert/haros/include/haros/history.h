@@ -104,6 +104,144 @@ namespace haros
       return PublishEvent<M>();
     }
 
+    template<class T>
+    PublishEvent<M> lastPublish(const std::string& topic,
+                                bool(T::*pred)(PublishEvent<M>), T* obj)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        PublishEvent<M> last;
+        typename std::map<std::string, PublishEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(obj, it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return PublishEvent<M>();
+    }
+
+    template<class T>
+    PublishEvent<M> lastPublish(const std::string& topic,
+                                bool(T::*pred)(PublishEvent<M>) const, T* obj)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        PublishEvent<M> last;
+        typename std::map<std::string, PublishEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(obj, it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return PublishEvent<M>();
+    }
+
+    template<class T>
+    PublishEvent<M> lastPublish(const std::string& topic,
+                                bool(T::*pred)(PublishEvent<M>),
+                                const boost::shared_ptr<T>& obj)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        PublishEvent<M> last;
+        typename std::map<std::string, PublishEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(obj, it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return PublishEvent<M>();
+    }
+
+    template<class T>
+    PublishEvent<M> lastPublish(const std::string& topic,
+                                bool(T::*pred)(PublishEvent<M>) const,
+                                const boost::shared_ptr<T>& obj)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        PublishEvent<M> last;
+        typename std::map<std::string, PublishEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(obj, it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return PublishEvent<M>();
+    }
+
+    PublishEvent<M> lastPublish(const std::string& topic,
+                                bool(*pred)(PublishEvent<M>))
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        PublishEvent<M> last;
+        typename std::map<std::string, PublishEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return PublishEvent<M>();
+    }
+
+    PublishEvent<M> lastPublish(const std::string& topic,
+        const boost::function<bool (PublishEvent<M>)>& pred)
+    {
+      boost::mutex::scoped_lock lock(pub_mutex_);
+      typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
+      if (it != published_.end())
+      {
+        PublishEvent<M> last;
+        typename std::map<std::string, PublishEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return PublishEvent<M>();
+    }
+
     //--------------------------------------------------------------------------
     // Receive Events
     //--------------------------------------------------------------------------
@@ -130,8 +268,146 @@ namespace haros
             it->second.bookmarks.find(bookmark);
         if (it2 != it->second.bookmarks.end())
         {
-          return MessageEvent<M>(it2->second);
+          return it2->second;
         }
+      }
+      return MessageEvent<M>();
+    }
+
+    template<class T>
+    MessageEvent<M> lastReceive(const std::string& topic,
+                                bool(T::*pred)(MessageEvent<M>), T* obj)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        MessageEvent<M> last;
+        typename std::map<std::string, MessageEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(obj, it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return MessageEvent<M>();
+    }
+
+    template<class T>
+    MessageEvent<M> lastReceive(const std::string& topic,
+                                bool(T::*pred)(MessageEvent<M>) const, T* obj)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        MessageEvent<M> last;
+        typename std::map<std::string, MessageEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(obj, it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return MessageEvent<M>();
+    }
+
+    template<class T>
+    MessageEvent<M> lastReceive(const std::string& topic,
+                                bool(T::*pred)(MessageEvent<M>),
+                                const boost::shared_ptr<T>& obj)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        MessageEvent<M> last;
+        typename std::map<std::string, MessageEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(obj, it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return MessageEvent<M>();
+    }
+
+    template<class T>
+    MessageEvent<M> lastReceive(const std::string& topic,
+                                bool(T::*pred)(MessageEvent<M>) const,
+                                const boost::shared_ptr<T>& obj)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        MessageEvent<M> last;
+        typename std::map<std::string, MessageEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(obj, it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return MessageEvent<M>();
+    }
+
+    MessageEvent<M> lastReceive(const std::string& topic,
+                                bool(*pred)(MessageEvent<M>))
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        MessageEvent<M> last;
+        typename std::map<std::string, MessageEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
+      }
+      return MessageEvent<M>();
+    }
+
+    MessageEvent<M> lastReceive(const std::string& topic,
+        const boost::function<bool (MessageEvent<M>)>& pred)
+    {
+      boost::mutex::scoped_lock lock(sub_mutex_);
+      typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
+      if (it != received_.end())
+      {
+        MessageEvent<M> last;
+        typename std::map<std::string, MessageEvent<M> >::iterator it2 =
+            it->second.bookmarks.begin();
+        for (; it2 != it->second.bookmarks.end(); it2++)
+        {
+          if (pred(it2->second) && it2->second > last)
+          {
+            last = it2->second;
+          }
+        }
+        return last;
       }
       return MessageEvent<M>();
     }

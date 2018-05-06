@@ -112,6 +112,67 @@ namespace haros
 #endif
     }
 
+    template<class T>
+    PublishEvent<M> lastPublishWhere(bool(T::*pred)(PublishEvent<M>), T* obj) const
+    {
+#ifdef NDEBUG
+      return PublishEvent<M>();
+#else
+      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred, obj);
+#endif
+    }
+
+    template<class T>
+    PublishEvent<M> lastPublishWhere(bool(T::*pred)(PublishEvent<M>) const, T* obj) const
+    {
+#ifdef NDEBUG
+      return PublishEvent<M>();
+#else
+      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred, obj);
+#endif
+    }
+
+    template<class T>
+    PublishEvent<M> lastPublishWhere(bool(T::*pred)(PublishEvent<M>),
+                                     const boost::shared_ptr<T>& obj) const
+    {
+#ifdef NDEBUG
+      return PublishEvent<M>();
+#else
+      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred, obj);
+#endif
+    }
+
+    template<class T>
+    PublishEvent<M> lastPublishWhere(bool(T::*pred)(PublishEvent<M>) const,
+                                     const boost::shared_ptr<T>& obj) const
+    {
+#ifdef NDEBUG
+      return PublishEvent<M>();
+#else
+      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred, obj);
+#endif
+    }
+
+    PublishEvent<M> lastPublishWhere(bool(*pred)(PublishEvent<M>)) const
+    {
+#ifdef NDEBUG
+      return PublishEvent<M>();
+#else
+      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred);
+#endif
+    }
+
+    PublishEvent<M> lastPublishWhere(
+        const boost::function<bool (PublishEvent<M>)>& pred) const
+    {
+#ifdef NDEBUG
+      return PublishEvent<M>();
+#else
+      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred);
+#endif
+    }
+
     boost::shared_ptr<M> lastMessage() const
     {
 #ifdef NDEBUG
@@ -127,6 +188,67 @@ namespace haros
       return boost::shared_ptr<M>();
 #else
       return lastPublish(bookmark).msg;
+#endif
+    }
+
+    template<class T>
+    boost::shared_ptr<M> lastMessageWhere(bool(T::*pred)(PublishEvent<M>), T* obj) const
+    {
+#ifdef NDEBUG
+      return boost::shared_ptr<M>();
+#else
+      return lastPublish(pred, obj).msg;
+#endif
+    }
+
+    template<class T>
+    boost::shared_ptr<M> lastMessageWhere(bool(T::*pred)(PublishEvent<M>) const, T* obj) const
+    {
+#ifdef NDEBUG
+      return boost::shared_ptr<M>();
+#else
+      return lastPublish(pred, obj).msg;
+#endif
+    }
+
+    template<class T>
+    boost::shared_ptr<M> lastMessageWhere(bool(T::*pred)(PublishEvent<M>),
+                                          const boost::shared_ptr<T>& obj) const
+    {
+#ifdef NDEBUG
+      return boost::shared_ptr<M>();
+#else
+      return lastPublish(pred, obj).msg;
+#endif
+    }
+
+    template<class T>
+    boost::shared_ptr<M> lastMessageWhere(bool(T::*pred)(PublishEvent<M>) const,
+                                          const boost::shared_ptr<T>& obj) const
+    {
+#ifdef NDEBUG
+      return boost::shared_ptr<M>();
+#else
+      return lastPublish(pred, obj).msg;
+#endif
+    }
+
+    boost::shared_ptr<M> lastMessageWhere(bool(*pred)(PublishEvent<M>)) const
+    {
+#ifdef NDEBUG
+      return boost::shared_ptr<M>();
+#else
+      return lastPublish(pred).msg;
+#endif
+    }
+
+    boost::shared_ptr<M> lastMessageWhere(
+        const boost::function<bool (PublishEvent<M>)>& pred) const
+    {
+#ifdef NDEBUG
+      return boost::shared_ptr<M>();
+#else
+      return lastPublish(pred).msg;
 #endif
     }
 
