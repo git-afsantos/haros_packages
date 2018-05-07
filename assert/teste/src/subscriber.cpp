@@ -42,6 +42,11 @@ public:
         ROS_ASSERT(!chatter.lastReceive("5n")
                    || chatter.lastMessage("5n")->data % 5 == 0);
         ROS_ASSERT(chatter.lastReceive("5n") <= chatter.lastReceive());
+        haros::MessageEvent<std_msgs::Int32> m2 =
+            chatter.lastReceiveWhere(&Handler::even, this);
+        ROS_ASSERT(!m2 || (m2.msg->data % 2 == 0));
+        ROS_ASSERT(chatter.lastReceiveWhere(&Handler::multipleFive, this) == chatter.lastReceive("5n"));
+        if (m2) ROS_INFO_STREAM("Last 2N receive data: " << m2.msg->data);
     }
 
     void callback2(const std_msgs::Int32::ConstPtr& msg)
@@ -68,6 +73,16 @@ public:
 
         ROS_ASSERT(!str_chatter.lastReceive() ||
                     str_chatter.lastMessage()->data == "Hello world!");
+    }
+
+    bool even(haros::MessageEvent<std_msgs::Int32> evt)
+    {
+      return evt && (evt.msg->data % 2 == 0);
+    }
+
+    bool multipleFive(haros::MessageEvent<std_msgs::Int32> evt)
+    {
+      return evt && (evt.msg->data % 5 == 0);
     }
 };
 

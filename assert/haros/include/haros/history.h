@@ -112,12 +112,17 @@ namespace haros
       typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
       if (it != published_.end())
       {
+        PublishEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && (obj->*pred)(evt))
+        {
+          return evt;
+        }
         PublishEvent<M> last;
         typename std::map<std::string, PublishEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
         for (; it2 != it->second.bookmarks.end(); it2++)
         {
-          if (pred(obj, it2->second) && it2->second > last)
+          if ((obj->*pred)(it2->second) && it2->second > last)
           {
             last = it2->second;
           }
@@ -135,12 +140,17 @@ namespace haros
       typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
       if (it != published_.end())
       {
+        PublishEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && (obj->*pred)(evt))
+        {
+          return evt;
+        }
         PublishEvent<M> last;
         typename std::map<std::string, PublishEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
         for (; it2 != it->second.bookmarks.end(); it2++)
         {
-          if (pred(obj, it2->second) && it2->second > last)
+          if ((obj->*pred)(it2->second) && it2->second > last)
           {
             last = it2->second;
           }
@@ -159,12 +169,17 @@ namespace haros
       typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
       if (it != published_.end())
       {
+        PublishEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && (obj->*pred)(evt))
+        {
+          return evt;
+        }
         PublishEvent<M> last;
         typename std::map<std::string, PublishEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
         for (; it2 != it->second.bookmarks.end(); it2++)
         {
-          if (pred(obj, it2->second) && it2->second > last)
+          if ((obj->*pred)(it2->second) && it2->second > last)
           {
             last = it2->second;
           }
@@ -183,12 +198,17 @@ namespace haros
       typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
       if (it != published_.end())
       {
+        PublishEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && (obj->*pred)(evt))
+        {
+          return evt;
+        }
         PublishEvent<M> last;
         typename std::map<std::string, PublishEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
         for (; it2 != it->second.bookmarks.end(); it2++)
         {
-          if (pred(obj, it2->second) && it2->second > last)
+          if ((obj->*pred)(it2->second) && it2->second > last)
           {
             last = it2->second;
           }
@@ -205,6 +225,11 @@ namespace haros
       typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
       if (it != published_.end())
       {
+        PublishEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && pred(evt))
+        {
+          return evt;
+        }
         PublishEvent<M> last;
         typename std::map<std::string, PublishEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
@@ -227,6 +252,11 @@ namespace haros
       typename std::map<std::string, PublisherEntry>::iterator it = published_.find(topic);
       if (it != published_.end())
       {
+        PublishEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && pred(evt))
+        {
+          return evt;
+        }
         PublishEvent<M> last;
         typename std::map<std::string, PublishEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
@@ -282,12 +312,17 @@ namespace haros
       typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
+        MessageEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && (obj->*pred)(evt))
+        {
+          return evt;
+        }
         MessageEvent<M> last;
         typename std::map<std::string, MessageEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
         for (; it2 != it->second.bookmarks.end(); it2++)
         {
-          if (pred(obj, it2->second) && it2->second > last)
+          if ((obj->*pred)(it2->second) && it2->second > last)
           {
             last = it2->second;
           }
@@ -305,12 +340,17 @@ namespace haros
       typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
+        MessageEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && (obj->*pred)(evt))
+        {
+          return evt;
+        }
         MessageEvent<M> last;
         typename std::map<std::string, MessageEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
         for (; it2 != it->second.bookmarks.end(); it2++)
         {
-          if (pred(obj, it2->second) && it2->second > last)
+          if ((obj->*pred)(it2->second) && it2->second > last)
           {
             last = it2->second;
           }
@@ -329,12 +369,17 @@ namespace haros
       typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
+        MessageEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && (obj->*pred)(evt))
+        {
+          return evt;
+        }
         MessageEvent<M> last;
         typename std::map<std::string, MessageEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
         for (; it2 != it->second.bookmarks.end(); it2++)
         {
-          if (pred(obj, it2->second) && it2->second > last)
+          if ((obj->*pred)(it2->second) && it2->second > last)
           {
             last = it2->second;
           }
@@ -353,12 +398,17 @@ namespace haros
       typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
+        MessageEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && (obj->*pred)(evt))
+        {
+          return evt;
+        }
         MessageEvent<M> last;
         typename std::map<std::string, MessageEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
         for (; it2 != it->second.bookmarks.end(); it2++)
         {
-          if (pred(obj, it2->second) && it2->second > last)
+          if ((obj->*pred)(it2->second) && it2->second > last)
           {
             last = it2->second;
           }
@@ -375,6 +425,11 @@ namespace haros
       typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
+        MessageEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && pred(evt))
+        {
+          return evt;
+        }
         MessageEvent<M> last;
         typename std::map<std::string, MessageEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
@@ -397,6 +452,11 @@ namespace haros
       typename std::map<std::string, SubscriberEntry>::iterator it = received_.find(topic);
       if (it != received_.end())
       {
+        MessageEvent<M> evt(it->second.time, it->second.msg);
+        if (evt && pred(evt))
+        {
+          return evt;
+        }
         MessageEvent<M> last;
         typename std::map<std::string, MessageEvent<M> >::iterator it2 =
             it->second.bookmarks.begin();
