@@ -43,10 +43,6 @@
 
 #include "haros/publish_event.h"
 
-#ifndef NDEBUG
-#include "haros/history.h"
-#endif
-
 namespace haros
 {
   template<class M>
@@ -61,10 +57,12 @@ namespace haros
 
     Publisher(const ros::Publisher& pub)
     : ros_pub_(pub)
+    , helper_(new Helper())
     {}
 
     Publisher(const Publisher<M>& rhs)
     : ros_pub_(rhs.ros_pub_)
+    , helper_(rhs.helper_)
     {}
 
     ~Publisher() {}
@@ -73,36 +71,17 @@ namespace haros
     // HAROS Interface
     //---------------------------------------------------------------------------
 
-    void bookmark(const std::string& key = std::string()) const
-    {
-#ifndef NDEBUG
-      History<M>::instance.saveNextPublish(ros_pub_.getTopic(), key);
-#endif
-    }
-
-    void forget(const std::string& key = std::string()) const
-    {
-#ifndef NDEBUG
-      History<M>::instance.forgetPublish(ros_pub_.getTopic(), key);
-#endif
-    }
-
-    void forgetAll() const
-    {
-#ifndef NDEBUG
-      History<M>::instance.forgetAllPublish(ros_pub_.getTopic());
-#endif
-    }
-
     PublishEvent<M> lastPublish() const
     {
-#ifdef NDEBUG
+#if NDEBUG
       return PublishEvent<M>();
 #else
-      return History<M>::instance.lastPublish(ros_pub_.getTopic());
+      ROS_ASSERT(helper_);
+      return PublishEvent<M>(helper_->time, helper_->msg);
 #endif
     }
 
+/*
     PublishEvent<M> lastPublish(const std::string& bookmark) const
     {
 #ifdef NDEBUG
@@ -172,16 +151,18 @@ namespace haros
       return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred);
 #endif
     }
+*/
 
     boost::shared_ptr<M> lastMessage() const
     {
-#ifdef NDEBUG
+#if NDEBUG
       return boost::shared_ptr<M>();
 #else
       return lastPublish().msg;
 #endif
     }
 
+/*
     boost::shared_ptr<M> lastMessage(const std::string& bookmark) const
     {
 #ifdef NDEBUG
@@ -251,6 +232,7 @@ namespace haros
       return lastPublish(pred).msg;
 #endif
     }
+*/
 
     //---------------------------------------------------------------------------
     // ROS Publisher Interface
@@ -259,9 +241,9 @@ namespace haros
     /**
      * \brief Publish a message on the topic associated with this Publisher.
      *
-     * This version of publish will allow fast intra-process message-passing in the future,
-     * so you may not mutate the message after it has been passed in here (since it will be
-     * passed directly into a callback function)
+     * This version of publish allows fast intra-process message-passing,
+     * so you may not mutate the message after it has been passed in here
+     * (since it will be passed directly into a callback function).
      *
      */
     void publish(const boost::shared_ptr<M>& message) const
@@ -269,8 +251,9 @@ namespace haros
       if (ros_pub_)
       {
         ros_pub_.publish(message);
-#ifndef NDEBUG
-        History<M>::instance.publish(ros_pub_.getTopic(), message);
+#if !(NDEBUG)
+        helper_->time = ros::Time::now();
+        helper_->msg = message;
 #endif
       }
     }
@@ -283,9 +266,9 @@ namespace haros
       if (ros_pub_)
       {
         ros_pub_.publish(message);
-#ifndef NDEBUG
-        History<M>::instance.publish(ros_pub_.getTopic(),
-                                     boost::shared_ptr<M>(new M(message)));
+#if !(NDEBUG)
+        helper_->time = ros::Time::now();
+        helper_->msg = boost::shared_ptr<M>(new M(message));
 #endif
       }
     }
@@ -365,7 +348,23 @@ namespace haros
     }
 
   private:
+    //---------------------------------------------------------------------------
+    // Helper Class
+    //---------------------------------------------------------------------------
+    struct Helper
+    {
+      ros::Time time;
+      boost::shared_ptr<M> msg;
+
+      Helper() : time(ros::Time(0)) {}
+    };
+
+    //---------------------------------------------------------------------------
+    // Internal State
+    //---------------------------------------------------------------------------
+
     ros::Publisher ros_pub_;
+    boost::shared_ptr<Helper> helper_;
   };
 } // namespace haros
 

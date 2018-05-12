@@ -6,16 +6,10 @@
 
 void publishCounter(haros::Publisher<std_msgs::Int32> &pub, int counter) {
     //ROS_INFO_STREAM("Publishing " << counter);
-    if (counter % 5 == 0)
-    {
-      pub.bookmark("5n");
-    }
     std_msgs::Int32 msg;
     msg.data = counter;
     pub.publish(msg);
     ROS_ASSERT(pub.lastMessage() && pub.lastMessage()->data == msg.data);
-    ROS_ASSERT(counter < 5 ||
-        (pub.lastMessage("5n") && pub.lastMessage("5n")->data - msg.data > -5));
 }
 
 void publishHello(haros::Publisher<std_msgs::String> &pub) {
