@@ -38,6 +38,7 @@
 #include <string>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
 #include <boost/bind.hpp>
 
 #include <ros/ros.h>
@@ -60,167 +61,179 @@ namespace haros
      * \brief Subscribe to a topic, version for class member function with bare pointer
      */
     template<class P, class T>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size, void(T::*fp)(P), T* obj, 
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp, obj))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<P>(boost::bind(fp, obj, _1)))
+    {
+      boost::function<void (Param)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for const class member function with bare pointer
      */
     template<class P, class T>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size, void(T::*fp)(P) const, T* obj, 
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp, obj))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<P>(boost::bind(fp, obj, _1)))
+    {
+      boost::function<void (Param)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for class member function with bare pointer
      */
     template<class T>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size,
                void(T::*fp)(const boost::shared_ptr<M const>&), T* obj, 
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp, obj))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, obj, _1)))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for const class member function with bare pointer
      */
     template<class T>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size,
                void(T::*fp)(const boost::shared_ptr<M const>&) const, T* obj, 
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp, obj))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, obj, _1)))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for class member function with shared_ptr
      */
     template<class P, class T>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size,
                void(T::*fp)(P), const boost::shared_ptr<T>& obj, 
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp, obj.get()))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<P>(boost::bind(fp, obj.get(), _1)))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for const class member function with shared_ptr
      */
     template<class P, class T>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size,
                void(T::*fp)(P) const, const boost::shared_ptr<T>& obj, 
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp, obj.get()))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<P>(boost::bind(fp, obj.get(), _1)))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for class member function with shared_ptr
      */
     template<class T>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size,
                void(T::*fp)(const boost::shared_ptr<M const>&),
                const boost::shared_ptr<T>& obj, 
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp, obj.get()))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, obj.get(), _1)))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for const class member function with shared_ptr
      */
     template<class T>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size,
                void(T::*fp)(const boost::shared_ptr<M const>&) const,
                const boost::shared_ptr<T>& obj, 
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp, obj.get()))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, obj.get(), _1)))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for bare function
      */
     template<class P>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size, void(*fp)(P),
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<P>(boost::bind(fp, _1)))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for bare function
      */
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size, void(*fp)(const boost::shared_ptr<M const>&),
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(fp))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_.get(), _1),
-                            ros::VoidConstPtr(), hints))
-    {}
+    : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, _1)))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_.get(), _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for arbitrary boost::function
      */
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size,
                const boost::function<void (const boost::shared_ptr<M const>&)>& f,
                const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(f))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_, _1),
-                            tracked_object, hints))
-    {}
+    : helper_(new HelperT<const boost::shared_ptr<M const>&>(f))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_, _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, tracked_object, hints);
+    }
 
     /**
      * \brief Subscribe to a topic, version for arbitrary boost::function
      */
     template<class P>
-    Subscriber(const ros::NodeHandle& nh, const std::string& topic,
+    Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size,
                const boost::function<void (P)>& f,
                const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
                const ros::TransportHints& hints = ros::TransportHints())
-    : helper_(new Helper(f))
-    , ros_sub_(nh.subscribe(topic, queue_size,
-                            boost::bind(&Helper::call, helper_, _1),
-                            tracked_object, hints))
-    {}
+    : helper_(new HelperT<P>(f))
+    {
+      boost::function<void (const ros::MessageEvent<M const>&)> cb =
+          boost::bind(&Helper::call, helper_, _1);
+      ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, tracked_object, hints);
+    }
 
     Subscriber(const Subscriber<M>& rhs)
     : ros_sub_(rhs.ros_sub_)
@@ -464,57 +477,64 @@ namespace haros
     }
 
   private:
+    typedef const ros::MessageEvent<M const>& Param;
+
     //--------------------------------------------------------------------------
     // Helper Class
     //--------------------------------------------------------------------------
 
+    // Adapted from CallbackHelper1 in message_filters
+    struct Helper
+    {
+      ros::Time time;
+      typename M::ConstPtr msg;
+
+      Helper() : time(ros::Time(0)) {}
+
+      virtual ~Helper() {}
+
+      virtual void call(const ros::MessageEvent<M const>& event) = 0;
+
+      typedef boost::shared_ptr<Helper> Ptr;
+    };
+
     // Adapted from CallbackHelper1T in message_filters
     template<typename P>
-    struct Helper
+    struct HelperT : Helper
     {
       typedef ros::ParameterAdapter<P> Adapter;
       typedef boost::function<void(typename Adapter::Parameter)> Callback;
       typedef typename Adapter::Event Event;
 
       Callback callback;
-      ros::Time time;
-      typename M::ConstPtr msg;
       bool dirty;
-
-      Helper()
-      : time(ros::Time(0))
-      {}
-
-      Helper(void(*fp)(P))
-      : time(ros::Time(0))
-      , callback(boost::bind(fp, _1))
+/*
+      HelperT(void(*fp)(P))
+      : callback(boost::bind(fp, _1))
       {}
 
       template<typename T>
-      Helper(void(T::*fp)(P), T* t)
-      : time(ros::Time(0))
-      , callback(boost::bind(fp, t, _1))
+      HelperT(void(T::*fp)(P), T* t)
+      : callback(boost::bind(fp, t, _1))
       {}
-
-      Helper(const boost::function<void(P)>& f)
-      : time(ros::Time(0))
-      , callback(f)
+*/
+      HelperT(const boost::function<void(P)>& f)
+      : callback(f)
       {}
-
+/*
       template<typename C>
-      Helper(const C& f)
-      : time(ros::Time(0))
-      , callback(Callback(f))
+      HelperT(const C& f)
+      : callback(Callback(f))
       {}
-
-      void call(const ros::MessageEvent<M const>& event)
+*/
+      virtual void call(const ros::MessageEvent<M const>& event)
       {
         dirty = true;
         Event client_event(event, event.nonConstWillCopy());
         callback(Adapter::getParameter(client_event));
         if (dirty)
         {
-          msg = event.getConstMessage();
+          this->msg = event.getConstMessage();
         }
       }
     };

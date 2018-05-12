@@ -4,6 +4,8 @@
 
 #include "haros/haros.h"
 
+void global_callback(const std_msgs::Int32::ConstPtr& msg) {}
+
 class Handler
 {
 public:
@@ -76,6 +78,8 @@ public:
 int main(int argc, char **argv) {
     ros::init(argc, argv, "listener");
     Handler h;
+    ros::NodeHandle nh;
+    haros::Subscriber<std_msgs::Int32> sub(nh, "global_chatter", 10, global_callback);
     ros::spin();
     return 0;
 }

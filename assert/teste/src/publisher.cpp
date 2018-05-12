@@ -25,12 +25,14 @@ int main(int argc, char **argv) {
     ros::NodeHandle n;
     haros::Publisher<std_msgs::Int32> pub(n.advertise<std_msgs::Int32>("chatter", 10));
     haros::Publisher<std_msgs::String> str_pub(n.advertise<std_msgs::String>("chatter_string", 10));
+    haros::Publisher<std_msgs::Int32> g_pub(n.advertise<std_msgs::Int32>("global_chatter", 10));
     ros::Rate loop_rate(10);
     int counter = 1;
     ROS_ASSERT(!pub.lastPublish());
     ROS_ASSERT(!str_pub.lastPublish());
     while (ros::ok()) {
         publishCounter(pub, counter);
+        publishCounter(g_pub, counter);
         publishHello(str_pub);
         ++counter;
         ros::spinOnce();
