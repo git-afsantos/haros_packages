@@ -36,6 +36,7 @@
 #define HAROS_ASSERT_SUBSCRIBER_H
 
 #include <string>
+#include <map>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
@@ -480,20 +481,64 @@ namespace haros
     typedef const ros::MessageEvent<M const>& Param;
 
     //--------------------------------------------------------------------------
-    // Helper Class
+    // Helper Classes
     //--------------------------------------------------------------------------
+
+    /**
+     * Justification for choosing (M const&) as the parameter type comes from
+     * [C++ Core Guidelines R.30](https://github.com/isocpp/CppCoreGuidelines):
+     * Take smart pointers as parameters only to explicitly express
+     * lifetime semantics.
+     */
+    struct Predicate
+    {
+      boost::function<bool (M const&)> predicate;
+      ros::Time time;
+      typename M::ConstPtr msg;
+
+      Predicate(const boost::function<bool (M const&)>& p)
+      : predicate(p)
+      , time(ros::Time(0))
+      {}
+
+      void evaluate(const ros::MessageEvent<M const>& event)
+      {
+        if (predicate(*(event.getConstMessage())))
+        {
+          time = event.getReceiptTime();
+          msg = event.getMessage();
+        }
+      }
+    };
 
     // Adapted from CallbackHelper1 in message_filters
     struct Helper
     {
+      bool dirty;
       ros::Time time;
       typename M::ConstPtr msg;
+      std::map<std::string, Predicate> filters;
 
       Helper() : time(ros::Time(0)) {}
 
       virtual ~Helper() {}
 
       virtual void call(const ros::MessageEvent<M const>& event) = 0;
+
+      void update(const ros::MessageEvent<M const>& event)
+      {
+        if (dirty)
+        {
+          time = event.getReceiptTime();
+          msg = event.getMessage();
+          typename std::map<std::string, Predicate>::iterator it;
+          for (it = filters.begin(); it != filters.end(); it++)
+          {
+            it->second.evaluate(event);
+          }
+          dirty = false;
+        }
+      }
 
       typedef boost::shared_ptr<Helper> Ptr;
     };
@@ -507,35 +552,15 @@ namespace haros
       typedef typename Adapter::Event Event;
 
       Callback callback;
-      bool dirty;
-/*
-      HelperT(void(*fp)(P))
-      : callback(boost::bind(fp, _1))
-      {}
 
-      template<typename T>
-      HelperT(void(T::*fp)(P), T* t)
-      : callback(boost::bind(fp, t, _1))
-      {}
-*/
-      HelperT(const boost::function<void(P)>& f)
-      : callback(f)
-      {}
-/*
-      template<typename C>
-      HelperT(const C& f)
-      : callback(Callback(f))
-      {}
-*/
+      HelperT(const boost::function<void(P)>& f) : callback(f) {}
+
       virtual void call(const ros::MessageEvent<M const>& event)
       {
-        dirty = true;
+        this->dirty = true;
         Event client_event(event, event.nonConstWillCopy());
         callback(Adapter::getParameter(client_event));
-        if (dirty)
-        {
-          this->msg = event.getConstMessage();
-        }
+        this->update(event);
       }
     };
 
