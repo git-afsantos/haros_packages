@@ -36,6 +36,8 @@
 #define HAROS_ASSERT_SUBSCRIBER_H
 
 #include <string>
+#include <stdexcept>
+#include <utility>
 #include <map>
 
 #include <boost/shared_ptr.hpp>
@@ -244,7 +246,7 @@ namespace haros
     ~Subscriber() {}
 
     //--------------------------------------------------------------------------
-    // HAROS Interface
+    // HAROS Message History
     //--------------------------------------------------------------------------
 
     MessageEvent<M> lastReceive() const
@@ -257,77 +259,15 @@ namespace haros
 #endif
     }
 
-/*
-    MessageEvent<M> lastReceive(const std::string& bookmark) const
+    MessageEvent<M> lastReceive(const std::string& predicate) const
     {
-#ifdef NDEBUG
+#if NDEBUG
       return MessageEvent<M>();
 #else
-      return History<M>::instance.lastReceive(ros_sub_.getTopic(), bookmark);
+      ROS_ASSERT(helper_);
+      return helper_->lookup(predicate);
 #endif
     }
-
-    template<class T>
-    MessageEvent<M> lastReceiveWhere(bool(T::*pred)(MessageEvent<M>), T* obj) const
-    {
-#ifdef NDEBUG
-      return MessageEvent<M>();
-#else
-      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred, obj);
-#endif
-    }
-
-    template<class T>
-    MessageEvent<M> lastReceiveWhere(bool(T::*pred)(MessageEvent<M>) const, T* obj) const
-    {
-#ifdef NDEBUG
-      return MessageEvent<M>();
-#else
-      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred, obj);
-#endif
-    }
-
-    template<class T>
-    MessageEvent<M> lastReceiveWhere(bool(T::*pred)(MessageEvent<M>),
-                                     const boost::shared_ptr<T>& obj) const
-    {
-#ifdef NDEBUG
-      return MessageEvent<M>();
-#else
-      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred, obj);
-#endif
-    }
-
-    template<class T>
-    MessageEvent<M> lastReceiveWhere(bool(T::*pred)(MessageEvent<M>) const,
-                                     const boost::shared_ptr<T>& obj) const
-    {
-#ifdef NDEBUG
-      return MessageEvent<M>();
-#else
-      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred, obj);
-#endif
-    }
-
-    MessageEvent<M> lastReceiveWhere(bool(*pred)(MessageEvent<M>)) const
-    {
-#ifdef NDEBUG
-      return MessageEvent<M>();
-#else
-      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred);
-#endif
-    }
-
-    MessageEvent<M> lastReceiveWhere(
-        const boost::function<bool (MessageEvent<M>)>& pred) const
-    {
-#ifdef NDEBUG
-      return MessageEvent<M>();
-#else
-      return History<M>::instance.lastReceive(ros_sub_.getTopic(), pred);
-#endif
-    }
-*/
 
     typename M::ConstPtr lastMessage() const
     {
@@ -338,77 +278,65 @@ namespace haros
 #endif
     }
 
-/*
-    typename M::ConstPtr lastMessage(const std::string& bookmark) const
+    typename M::ConstPtr lastMessage(const std::string& predicate) const
     {
-#ifdef NDEBUG
+#if NDEBUG
       return typename M::ConstPtr();
 #else
-      return lastReceive(bookmark).msg;
+      return lastReceive(predicate).msg;
+#endif
+    }
+
+    void updateHistory() const
+    {
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      helper_->update();
+#endif
+    }
+
+    //--------------------------------------------------------------------------
+    // HAROS History Predicate Registry
+    //--------------------------------------------------------------------------
+
+    template<class T>
+    void recordIf(bool(T::*pred)(M const&), T* obj, const std::string& key) const
+    {
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      Predicate p(boost::bind(pred, obj, _1));
+      helper_->addPredicate(key, p);
 #endif
     }
 
     template<class T>
-    typename M::ConstPtr lastMessageWhere(bool(T::*pred)(MessageEvent<M>), T* obj) const
+    void recordIf(bool(T::*pred)(M const&) const, T* obj, const std::string& key) const
     {
-#ifdef NDEBUG
-      return typename M::ConstPtr();
-#else
-      return lastReceive(pred, obj).msg;
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      Predicate p(boost::bind(pred, obj, _1));
+      helper_->addPredicate(key, p);
 #endif
     }
 
-    template<class T>
-    typename M::ConstPtr lastMessageWhere(bool(T::*pred)(MessageEvent<M>) const, T* obj) const
+    void recordIf(bool(*pred)(M const&), const std::string& key) const
     {
-#ifdef NDEBUG
-      return typename M::ConstPtr();
-#else
-      return lastReceive(pred, obj).msg;
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      Predicate p(boost::bind(pred, _1));
+      helper_->addPredicate(key, p);
 #endif
     }
 
-    template<class T>
-    typename M::ConstPtr lastMessageWhere(bool(T::*pred)(MessageEvent<M>),
-                                          const boost::shared_ptr<T>& obj) const
+    void recordIf(const boost::function<bool (M const&)>& pred,
+                  const std::string& key) const
     {
-#ifdef NDEBUG
-      return typename M::ConstPtr();
-#else
-      return lastReceive(pred, obj).msg;
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      Predicate p(pred);
+      helper_->addPredicate(key, p);
 #endif
     }
-
-    template<class T>
-    typename M::ConstPtr lastMessageWhere(bool(T::*pred)(MessageEvent<M>) const,
-                                          const boost::shared_ptr<T>& obj) const
-    {
-#ifdef NDEBUG
-      return typename M::ConstPtr();
-#else
-      return lastReceive(pred, obj).msg;
-#endif
-    }
-
-    typename M::ConstPtr lastMessageWhere(bool(*pred)(MessageEvent<M>)) const
-    {
-#ifdef NDEBUG
-      return typename M::ConstPtr();
-#else
-      return lastReceive(pred).msg;
-#endif
-    }
-
-    typename M::ConstPtr lastMessageWhere(
-        const boost::function<bool (MessageEvent<M>)>& pred) const
-    {
-#ifdef NDEBUG
-      return typename M::ConstPtr();
-#else
-      return lastReceive(pred).msg;
-#endif
-    }
-*/
 
     //--------------------------------------------------------------------------
     // ROS Subscriber Interface
@@ -518,6 +446,7 @@ namespace haros
       ros::Time time;
       typename M::ConstPtr msg;
       std::map<std::string, Predicate> filters;
+      const ros::MessageEvent<M const> *ptr;
 
       Helper() : time(ros::Time(0)) {}
 
@@ -525,22 +454,42 @@ namespace haros
 
       virtual void call(const ros::MessageEvent<M const>& event) = 0;
 
-      void update(const ros::MessageEvent<M const>& event)
+      void update()
       {
-        if (dirty)
+        if (dirty && ptr)
         {
-          time = event.getReceiptTime();
-          msg = event.getMessage();
+          time = ptr->getReceiptTime();
+          msg = ptr->getMessage();
           typename std::map<std::string, Predicate>::iterator it;
           for (it = filters.begin(); it != filters.end(); it++)
           {
-            it->second.evaluate(event);
+            it->second.evaluate(*ptr);
           }
           dirty = false;
+          ptr = NULL;
         }
       }
 
-      typedef boost::shared_ptr<Helper> Ptr;
+      void addPredicate(const std::string& key, const Predicate& pred)
+      {
+        std::pair<typename std::map<std::string, Predicate>::iterator, bool> res
+            = filters.insert(std::make_pair(key, pred));
+        if (!res.second)
+        {
+          throw std::invalid_argument(key);
+        }
+      }
+
+      MessageEvent<M> lookup(const std::string& key) const
+      {
+        typename std::map<std::string, Predicate>::const_iterator it
+            = filters.find(key);
+        if (it == filters.end())
+        {
+          throw std::out_of_range(key);
+        }
+        return MessageEvent<M>(it->second.time, it->second.msg);
+      }
     };
 
     // Adapted from CallbackHelper1T in message_filters
@@ -558,9 +507,10 @@ namespace haros
       virtual void call(const ros::MessageEvent<M const>& event)
       {
         this->dirty = true;
+        this->ptr = &event;
         Event client_event(event, event.nonConstWillCopy());
         callback(Adapter::getParameter(client_event));
-        this->update(event);
+        this->update();
       }
     };
 

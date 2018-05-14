@@ -35,8 +35,6 @@
 #ifndef HAROS_ASSERT_PUBLISH_EVENT_H
 #define HAROS_ASSERT_PUBLISH_EVENT_H
 
-#include <boost/shared_ptr.hpp>
-
 namespace haros
 {
   /** This is supposed to be a very lightweight object.
@@ -52,7 +50,7 @@ namespace haros
     //---------------------------------------------------------------------------
 
     ros::Time time;
-    boost::shared_ptr<M> msg;
+    typename M::Ptr msg;
 
     //---------------------------------------------------------------------------
     // Constructors
@@ -62,7 +60,7 @@ namespace haros
     : time(ros::Time(0))
     {}
 
-    PublishEvent(const ros::Time& _time, const boost::shared_ptr<M>& _msg)
+    PublishEvent(const ros::Time& _time, const typename M::Ptr& _msg)
     : time(_time)
     , msg(_msg)
     {}

@@ -36,8 +36,13 @@
 #define HAROS_ASSERT_PUBLISHER_H
 
 #include <string>
+#include <stdexcept>
+#include <utility>
+#include <map>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
 #include <ros/ros.h>
 
@@ -55,9 +60,27 @@ namespace haros
 
     Publisher() {}
 
-    Publisher(const ros::Publisher& pub)
-    : ros_pub_(pub)
-    , helper_(new Helper())
+    /**
+     * \brief Advertise a topic, simple version
+     */
+    Publisher(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size,
+              bool latch = false)
+    : helper_(new Helper())
+    , ros_pub_(nh.advertise<M>(topic, queue_size, latch))
+    {}
+
+    /**
+     * \brief Advertise a topic, with most of the available options, including subscriber status callbacks
+     */
+    Publisher(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size,
+              const ros::SubscriberStatusCallback& connect_cb,
+              const ros::SubscriberStatusCallback& disconnect_cb =
+                  ros::SubscriberStatusCallback(),
+              const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
+              bool latch = false)
+    : helper_(new Helper())
+    , ros_pub_(nh.advertise<M>(topic, queue_size, connect_cb, disconnect_cb,
+                               tracked_object, latch))
     {}
 
     Publisher(const Publisher<M>& rhs)
@@ -68,7 +91,7 @@ namespace haros
     ~Publisher() {}
 
     //---------------------------------------------------------------------------
-    // HAROS Interface
+    // HAROS Message History
     //---------------------------------------------------------------------------
 
     PublishEvent<M> lastPublish() const
@@ -81,158 +104,76 @@ namespace haros
 #endif
     }
 
-/*
-    PublishEvent<M> lastPublish(const std::string& bookmark) const
-    {
-#ifdef NDEBUG
-      return PublishEvent<M>();
-#else
-      return History<M>::instance.lastPublish(ros_pub_.getTopic(), bookmark);
-#endif
-    }
-
-    template<class T>
-    PublishEvent<M> lastPublishWhere(bool(T::*pred)(PublishEvent<M>), T* obj) const
-    {
-#ifdef NDEBUG
-      return PublishEvent<M>();
-#else
-      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred, obj);
-#endif
-    }
-
-    template<class T>
-    PublishEvent<M> lastPublishWhere(bool(T::*pred)(PublishEvent<M>) const, T* obj) const
-    {
-#ifdef NDEBUG
-      return PublishEvent<M>();
-#else
-      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred, obj);
-#endif
-    }
-
-    template<class T>
-    PublishEvent<M> lastPublishWhere(bool(T::*pred)(PublishEvent<M>),
-                                     const boost::shared_ptr<T>& obj) const
-    {
-#ifdef NDEBUG
-      return PublishEvent<M>();
-#else
-      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred, obj);
-#endif
-    }
-
-    template<class T>
-    PublishEvent<M> lastPublishWhere(bool(T::*pred)(PublishEvent<M>) const,
-                                     const boost::shared_ptr<T>& obj) const
-    {
-#ifdef NDEBUG
-      return PublishEvent<M>();
-#else
-      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred, obj);
-#endif
-    }
-
-    PublishEvent<M> lastPublishWhere(bool(*pred)(PublishEvent<M>)) const
-    {
-#ifdef NDEBUG
-      return PublishEvent<M>();
-#else
-      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred);
-#endif
-    }
-
-    PublishEvent<M> lastPublishWhere(
-        const boost::function<bool (PublishEvent<M>)>& pred) const
-    {
-#ifdef NDEBUG
-      return PublishEvent<M>();
-#else
-      return History<M>::instance.lastPublish(ros_pub_.getTopic(), pred);
-#endif
-    }
-*/
-
-    boost::shared_ptr<M> lastMessage() const
+    PublishEvent<M> lastPublish(const std::string& predicate) const
     {
 #if NDEBUG
-      return boost::shared_ptr<M>();
+      return PublishEvent<M>();
+#else
+      ROS_ASSERT(helper_);
+      return helper_->lookup(predicate);
+#endif
+    }
+
+    typename M::Ptr lastMessage() const
+    {
+#if NDEBUG
+      return typename M::Ptr();
 #else
       return lastPublish().msg;
 #endif
     }
 
-/*
-    boost::shared_ptr<M> lastMessage(const std::string& bookmark) const
+    typename M::Ptr lastMessage(const std::string& predicate) const
     {
-#ifdef NDEBUG
-      return boost::shared_ptr<M>();
+#if NDEBUG
+      return typename M::Ptr();
 #else
-      return lastPublish(bookmark).msg;
+      return lastPublish(predicate).msg;
+#endif
+    }
+
+    //---------------------------------------------------------------------------
+    // HAROS History Predicate Registry
+    //---------------------------------------------------------------------------
+
+    template<class T>
+    void recordIf(bool(T::*pred)(M const&), T* obj, const std::string& key) const
+    {
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      Predicate p(boost::bind(pred, obj, _1));
+      helper_->addPredicate(key, p);
 #endif
     }
 
     template<class T>
-    boost::shared_ptr<M> lastMessageWhere(bool(T::*pred)(PublishEvent<M>), T* obj) const
+    void recordIf(bool(T::*pred)(M const&) const, T* obj, const std::string& key) const
     {
-#ifdef NDEBUG
-      return boost::shared_ptr<M>();
-#else
-      return lastPublish(pred, obj).msg;
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      Predicate p(boost::bind(pred, obj, _1));
+      helper_->addPredicate(key, p);
 #endif
     }
 
-    template<class T>
-    boost::shared_ptr<M> lastMessageWhere(bool(T::*pred)(PublishEvent<M>) const, T* obj) const
+    void recordIf(bool(*pred)(M const&), const std::string& key) const
     {
-#ifdef NDEBUG
-      return boost::shared_ptr<M>();
-#else
-      return lastPublish(pred, obj).msg;
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      Predicate p(boost::bind(pred, _1));
+      helper_->addPredicate(key, p);
 #endif
     }
 
-    template<class T>
-    boost::shared_ptr<M> lastMessageWhere(bool(T::*pred)(PublishEvent<M>),
-                                          const boost::shared_ptr<T>& obj) const
+    void recordIf(const boost::function<bool (M const&)>& pred,
+                  const std::string& key) const
     {
-#ifdef NDEBUG
-      return boost::shared_ptr<M>();
-#else
-      return lastPublish(pred, obj).msg;
+#if !(NDEBUG)
+      ROS_ASSERT(helper_);
+      Predicate p(pred);
+      helper_->addPredicate(key, p);
 #endif
     }
-
-    template<class T>
-    boost::shared_ptr<M> lastMessageWhere(bool(T::*pred)(PublishEvent<M>) const,
-                                          const boost::shared_ptr<T>& obj) const
-    {
-#ifdef NDEBUG
-      return boost::shared_ptr<M>();
-#else
-      return lastPublish(pred, obj).msg;
-#endif
-    }
-
-    boost::shared_ptr<M> lastMessageWhere(bool(*pred)(PublishEvent<M>)) const
-    {
-#ifdef NDEBUG
-      return boost::shared_ptr<M>();
-#else
-      return lastPublish(pred).msg;
-#endif
-    }
-
-    boost::shared_ptr<M> lastMessageWhere(
-        const boost::function<bool (PublishEvent<M>)>& pred) const
-    {
-#ifdef NDEBUG
-      return boost::shared_ptr<M>();
-#else
-      return lastPublish(pred).msg;
-#endif
-    }
-*/
 
     //---------------------------------------------------------------------------
     // ROS Publisher Interface
@@ -252,8 +193,8 @@ namespace haros
       {
         ros_pub_.publish(message);
 #if !(NDEBUG)
-        helper_->time = ros::Time::now();
-        helper_->msg = message;
+        ROS_ASSERT(helper_);
+        helper_->update(message);
 #endif
       }
     }
@@ -267,8 +208,8 @@ namespace haros
       {
         ros_pub_.publish(message);
 #if !(NDEBUG)
-        helper_->time = ros::Time::now();
-        helper_->msg = boost::shared_ptr<M>(new M(message));
+        ROS_ASSERT(helper_);
+        helper_->update(typename M::Ptr(new M(message)));
 #endif
       }
     }
@@ -349,14 +290,75 @@ namespace haros
 
   private:
     //---------------------------------------------------------------------------
-    // Helper Class
+    // Helper Classes
     //---------------------------------------------------------------------------
+
+    /**
+     * Justification for choosing (M const&) as the parameter type comes from
+     * [C++ Core Guidelines R.30](https://github.com/isocpp/CppCoreGuidelines):
+     * Take smart pointers as parameters only to explicitly express
+     * lifetime semantics.
+     */
+    struct Predicate
+    {
+      boost::function<bool (M const&)> predicate;
+      ros::Time time;
+      typename M::Ptr msg;
+
+      Predicate(const boost::function<bool (M const&)>& p)
+      : predicate(p)
+      , time(ros::Time(0))
+      {}
+
+      void evaluate(typename M::Ptr message)
+      {
+        if (predicate(*message))
+        {
+          time = ros::Time::now();
+          msg = message;
+        }
+      }
+    };
+
     struct Helper
     {
       ros::Time time;
-      boost::shared_ptr<M> msg;
+      typename M::Ptr msg;
+      std::map<std::string, Predicate> filters;
 
       Helper() : time(ros::Time(0)) {}
+
+      void update(typename M::Ptr message)
+      {
+        time = ros::Time::now();
+        msg = message;
+        typename std::map<std::string, Predicate>::iterator it;
+        for (it = filters.begin(); it != filters.end(); it++)
+        {
+          it->second.evaluate(message);
+        }
+      }
+
+      void addPredicate(const std::string& key, const Predicate& pred)
+      {
+        std::pair<typename std::map<std::string, Predicate>::iterator, bool> res
+            = filters.insert(std::make_pair(key, pred));
+        if (!res.second)
+        {
+          throw std::invalid_argument(key);
+        }
+      }
+
+      PublishEvent<M> lookup(const std::string& key) const
+      {
+        typename std::map<std::string, Predicate>::const_iterator it
+            = filters.find(key);
+        if (it == filters.end())
+        {
+          throw std::out_of_range(key);
+        }
+        return PublishEvent<M>(it->second.time, it->second.msg);
+      }
     };
 
     //---------------------------------------------------------------------------
