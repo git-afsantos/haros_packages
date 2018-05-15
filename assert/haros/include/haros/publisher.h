@@ -36,13 +36,25 @@
 #define HAROS_ASSERT_PUBLISHER_H
 
 #include <string>
+
+#if !(NDEBUG)
 #include <stdexcept>
 #include <utility>
 #include <map>
+#endif
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+
+#if !(NDEBUG)
 #include <boost/bind.hpp>
+
+#if HAROS_CHECK_THREAD_SAFETY
+#include <boost/thread/thread.hpp>
+#include <boost/thread/tss.hpp>
+#include <boost/thread/mutex.hpp>
+#endif // HAROS_CHECK_THREAD_SAFETY
+#endif // !(NDEBUG)
 
 #include <ros/ros.h>
 
@@ -65,7 +77,9 @@ namespace haros
      */
     Publisher(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size,
               bool latch = false)
+#if !(NDEBUG)
     : helper_(new Helper())
+#endif
     , ros_pub_(nh.advertise<M>(topic, queue_size, latch))
     {}
 
@@ -78,14 +92,18 @@ namespace haros
                   ros::SubscriberStatusCallback(),
               const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
               bool latch = false)
+#if !(NDEBUG)
     : helper_(new Helper())
+#endif
     , ros_pub_(nh.advertise<M>(topic, queue_size, connect_cb, disconnect_cb,
                                tracked_object, latch))
     {}
 
     Publisher(const Publisher<M>& rhs)
     : ros_pub_(rhs.ros_pub_)
+#if !(NDEBUG)
     , helper_(rhs.helper_)
+#endif
     {}
 
     ~Publisher() {}
@@ -100,7 +118,7 @@ namespace haros
       return PublishEvent<M>();
 #else
       ROS_ASSERT(helper_);
-      return PublishEvent<M>(helper_->time, helper_->msg);
+      return helper_->lastEvent();
 #endif
     }
 
@@ -289,6 +307,7 @@ namespace haros
     }
 
   private:
+#if !(NDEBUG)
     //---------------------------------------------------------------------------
     // Helper Classes
     //---------------------------------------------------------------------------
@@ -325,11 +344,24 @@ namespace haros
       ros::Time time;
       typename M::Ptr msg;
       std::map<std::string, Predicate> filters;
+#if HAROS_CHECK_THREAD_SAFETY
+      boost::thread_specific_ptr<bool> known_thread;
+      boost::mutex mutex;
+      size_t thread_count;
+#endif
 
-      Helper() : time(ros::Time(0)) {}
+      Helper()
+      : time(ros::Time(0))
+#if HAROS_CHECK_THREAD_SAFETY
+      , thread_count(0)
+#endif
+      {}
 
       void update(typename M::Ptr message)
       {
+#if HAROS_CHECK_THREAD_SAFETY
+        countThread();
+#endif
         time = ros::Time::now();
         msg = message;
         typename std::map<std::string, Predicate>::iterator it;
@@ -341,6 +373,7 @@ namespace haros
 
       void addPredicate(const std::string& key, const Predicate& pred)
       {
+        // TODO decide if countThread() should be called here too
         std::pair<typename std::map<std::string, Predicate>::iterator, bool> res
             = filters.insert(std::make_pair(key, pred));
         if (!res.second)
@@ -349,8 +382,19 @@ namespace haros
         }
       }
 
-      PublishEvent<M> lookup(const std::string& key) const
+      PublishEvent<M> lastEvent()
       {
+#if HAROS_CHECK_THREAD_SAFETY
+        countThread();
+#endif
+        return PublishEvent<M>(time, msg);
+      }
+
+      PublishEvent<M> lookup(const std::string& key)
+      {
+#if HAROS_CHECK_THREAD_SAFETY
+        countThread();
+#endif
         typename std::map<std::string, Predicate>::const_iterator it
             = filters.find(key);
         if (it == filters.end())
@@ -359,14 +403,39 @@ namespace haros
         }
         return PublishEvent<M>(it->second.time, it->second.msg);
       }
+
+#if HAROS_CHECK_THREAD_SAFETY
+      void countThread()
+      {
+        if (!known_thread.get())
+        {
+          known_thread.reset(new bool(true));
+          boost::mutex::scoped_lock lock(mutex);
+          ++thread_count;
+          if (thread_count > 1)
+          {
+            oops();
+          }
+        }
+      }
+
+      void oops() const
+      {
+        ROS_WARN("Detected multiple threads using the same Publisher. "
+                 "Make sure to use proper thread synchronization.");
+      }
+#endif // HAROS_CHECK_THREAD_SAFETY
     };
+#endif // !(NDEBUG)
 
     //---------------------------------------------------------------------------
     // Internal State
     //---------------------------------------------------------------------------
 
     ros::Publisher ros_pub_;
+#if !(NDEBUG)
     boost::shared_ptr<Helper> helper_;
+#endif
   };
 } // namespace haros
 

@@ -36,13 +36,25 @@
 #define HAROS_ASSERT_SUBSCRIBER_H
 
 #include <string>
+
+#if !(NDEBUG)
 #include <stdexcept>
 #include <utility>
 #include <map>
+#endif
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+
+#if !(NDEBUG)
 #include <boost/bind.hpp>
+
+#if HAROS_CHECK_THREAD_SAFETY
+#include <boost/thread/thread.hpp>
+#include <boost/thread/tss.hpp>
+#include <boost/thread/mutex.hpp>
+#endif // HAROS_CHECK_THREAD_SAFETY
+#endif // !(NDEBUG)
 
 #include <ros/ros.h>
 
@@ -67,12 +79,17 @@ namespace haros
     Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size, void(T::*fp)(P), T* obj, 
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, obj, hints))
+    {}
+#else
     : helper_(new HelperT<P>(boost::bind(fp, obj, _1)))
     {
       boost::function<void (Param)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for const class member function with bare pointer
@@ -81,12 +98,17 @@ namespace haros
     Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size, void(T::*fp)(P) const, T* obj, 
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, obj, hints))
+    {}
+#else
     : helper_(new HelperT<P>(boost::bind(fp, obj, _1)))
     {
       boost::function<void (Param)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for class member function with bare pointer
@@ -96,12 +118,17 @@ namespace haros
                uint32_t queue_size,
                void(T::*fp)(const boost::shared_ptr<M const>&), T* obj, 
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, obj, hints))
+    {}
+#else
     : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, obj, _1)))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for const class member function with bare pointer
@@ -111,12 +138,17 @@ namespace haros
                uint32_t queue_size,
                void(T::*fp)(const boost::shared_ptr<M const>&) const, T* obj, 
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, obj, hints))
+    {}
+#else
     : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, obj, _1)))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for class member function with shared_ptr
@@ -126,12 +158,17 @@ namespace haros
                uint32_t queue_size,
                void(T::*fp)(P), const boost::shared_ptr<T>& obj, 
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, obj, hints))
+    {}
+#else
     : helper_(new HelperT<P>(boost::bind(fp, obj.get(), _1)))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for const class member function with shared_ptr
@@ -141,12 +178,17 @@ namespace haros
                uint32_t queue_size,
                void(T::*fp)(P) const, const boost::shared_ptr<T>& obj, 
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, obj, hints))
+    {}
+#else
     : helper_(new HelperT<P>(boost::bind(fp, obj.get(), _1)))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for class member function with shared_ptr
@@ -157,12 +199,17 @@ namespace haros
                void(T::*fp)(const boost::shared_ptr<M const>&),
                const boost::shared_ptr<T>& obj, 
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, obj, hints))
+    {}
+#else
     : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, obj.get(), _1)))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for const class member function with shared_ptr
@@ -173,12 +220,17 @@ namespace haros
                void(T::*fp)(const boost::shared_ptr<M const>&) const,
                const boost::shared_ptr<T>& obj, 
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, obj, hints))
+    {}
+#else
     : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, obj.get(), _1)))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for bare function
@@ -187,12 +239,17 @@ namespace haros
     Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size, void(*fp)(P),
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, hints))
+    {}
+#else
     : helper_(new HelperT<P>(boost::bind(fp, _1)))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for bare function
@@ -200,12 +257,17 @@ namespace haros
     Subscriber(ros::NodeHandle& nh, const std::string& topic,
                uint32_t queue_size, void(*fp)(const boost::shared_ptr<M const>&),
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, fp, hints))
+    {}
+#else
     : helper_(new HelperT<const boost::shared_ptr<M const>&>(boost::bind(fp, _1)))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_.get(), _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, helper_, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for arbitrary boost::function
@@ -215,12 +277,17 @@ namespace haros
                const boost::function<void (const boost::shared_ptr<M const>&)>& f,
                const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, f, tracked_object, hints))
+    {}
+#else
     : helper_(new HelperT<const boost::shared_ptr<M const>&>(f))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_, _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, tracked_object, hints);
     }
+#endif
 
     /**
      * \brief Subscribe to a topic, version for arbitrary boost::function
@@ -231,16 +298,23 @@ namespace haros
                const boost::function<void (P)>& f,
                const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
                const ros::TransportHints& hints = ros::TransportHints())
+#if NDEBUG
+    : ros_sub_(nh.subscribe(topic, queue_size, f, tracked_object, hints))
+    {}
+#else
     : helper_(new HelperT<P>(f))
     {
       boost::function<void (const ros::MessageEvent<M const>&)> cb =
           boost::bind(&Helper::call, helper_, _1);
       ros_sub_ = nh.template subscribe<Param>(topic, queue_size, cb, tracked_object, hints);
     }
+#endif
 
     Subscriber(const Subscriber<M>& rhs)
     : ros_sub_(rhs.ros_sub_)
+#if !(NDEBUG)
     , helper_(rhs.helper_)
+#endif
     {}
 
     ~Subscriber() {}
@@ -255,7 +329,7 @@ namespace haros
       return MessageEvent<M>();
 #else
       ROS_ASSERT(helper_);
-      return MessageEvent<M>(helper_->time, helper_->msg);
+      return helper_->lastEvent();
 #endif
     }
 
@@ -291,7 +365,7 @@ namespace haros
     {
 #if !(NDEBUG)
       ROS_ASSERT(helper_);
-      helper_->update();
+      helper_->update(true);
 #endif
     }
 
@@ -408,6 +482,7 @@ namespace haros
   private:
     typedef const ros::MessageEvent<M const>& Param;
 
+#if !(NDEBUG)
     //--------------------------------------------------------------------------
     // Helper Classes
     //--------------------------------------------------------------------------
@@ -447,15 +522,41 @@ namespace haros
       typename M::ConstPtr msg;
       std::map<std::string, Predicate> filters;
       const ros::MessageEvent<M const> *ptr;
+#if HAROS_CHECK_THREAD_SAFETY
+      boost::thread_specific_ptr<bool> known_thread;
+      boost::mutex mutex;
+      size_t thread_count;
+      bool manual_update;
+      boost::thread::id callback_thread;
+#endif
 
-      Helper() : time(ros::Time(0)) {}
+      Helper()
+      : time(ros::Time(0))
+      , dirty(false)
+      , ptr(NULL)
+#if HAROS_CHECK_THREAD_SAFETY
+      , thread_count(0)
+      , manual_update(false)
+#endif
+      {}
 
       virtual ~Helper() {}
 
       virtual void call(const ros::MessageEvent<M const>& event) = 0;
 
-      void update()
+      void update(bool manual)
       {
+#if HAROS_CHECK_THREAD_SAFETY
+        {
+          boost::mutex::scoped_lock lock(mutex);
+          if (boost::this_thread::get_id() != callback_thread)
+          {
+            oops();
+          }
+          manual_update = manual;
+        }
+        countThread();
+#endif
         if (dirty && ptr)
         {
           time = ptr->getReceiptTime();
@@ -472,6 +573,7 @@ namespace haros
 
       void addPredicate(const std::string& key, const Predicate& pred)
       {
+        // TODO decide if countThread() should be called here too
         std::pair<typename std::map<std::string, Predicate>::iterator, bool> res
             = filters.insert(std::make_pair(key, pred));
         if (!res.second)
@@ -480,8 +582,19 @@ namespace haros
         }
       }
 
-      MessageEvent<M> lookup(const std::string& key) const
+      MessageEvent<M> lastEvent()
       {
+#if HAROS_CHECK_THREAD_SAFETY
+        countThread();
+#endif
+        return MessageEvent<M>(time, msg);
+      }
+
+      MessageEvent<M> lookup(const std::string& key)
+      {
+#if HAROS_CHECK_THREAD_SAFETY
+        countThread();
+#endif
         typename std::map<std::string, Predicate>::const_iterator it
             = filters.find(key);
         if (it == filters.end())
@@ -490,6 +603,32 @@ namespace haros
         }
         return MessageEvent<M>(it->second.time, it->second.msg);
       }
+
+#if HAROS_CHECK_THREAD_SAFETY
+      void countThread()
+      {
+        if (!known_thread.get())
+        {
+          known_thread.reset(new bool(true));
+          boost::mutex::scoped_lock lock(mutex);
+          ++thread_count;
+          if (thread_count > 1)
+          {
+            oops();
+          }
+        }
+      }
+
+      void oops() const
+      {
+        if (!manual_update)
+        {
+          ROS_WARN("Detected multiple threads using the same Subscriber. "
+                   "Make sure to call updateHistory() within your callback, "
+                   "and in a thread-safe manner (e.g. using mutexes).");
+        }
+      }
+#endif
     };
 
     // Adapted from CallbackHelper1T in message_filters
@@ -506,20 +645,29 @@ namespace haros
 
       virtual void call(const ros::MessageEvent<M const>& event)
       {
+#if HAROS_CHECK_THREAD_SAFETY
+        {
+          boost::mutex::scoped_lock lock(this->mutex);
+          this->callback_thread = boost::this_thread::get_id();
+        }
+#endif
         this->dirty = true;
         this->ptr = &event;
         Event client_event(event, event.nonConstWillCopy());
         callback(Adapter::getParameter(client_event));
-        this->update();
+        this->update(false);
       }
     };
+#endif // !(NDEBUG)
 
     //--------------------------------------------------------------------------
     // Internal State
     //--------------------------------------------------------------------------
 
     ros::Subscriber ros_sub_;
+#if !(NDEBUG)
     boost::shared_ptr<Helper> helper_;
+#endif
   };
 } // namespace haros
 

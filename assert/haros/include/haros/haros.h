@@ -37,6 +37,8 @@
 
 #include <ros/ros.h>
 
+#define HAROS_CHECK_THREAD_SAFETY true
+
 #include "haros/message_event.h"
 #include "haros/publish_event.h"
 #include "haros/publisher.h"
