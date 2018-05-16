@@ -1,4 +1,0 @@
-<launch>
-  <node name="listener" pkg="teste" type="subscriber" output="screen" />
-  <node name="talker" pkg="teste" type="publisher" output="screen" />
-</launch>

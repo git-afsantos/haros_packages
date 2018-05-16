@@ -1,3 +1,0 @@
-<launch>
-  <node name="not_thread_safe" pkg="teste" type="not_thread_safe" output="screen" />
-</launch>

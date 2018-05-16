@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(teste)
+project(haros_lib_examples)
 
 find_package(catkin REQUIRED COMPONENTS
   haros
@@ -17,7 +17,7 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES teste
+#  LIBRARIES haros_lib_examples
  CATKIN_DEPENDS haros roscpp std_msgs
  DEPENDS Boost
 )
