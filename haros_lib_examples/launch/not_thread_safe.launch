@@ -1,0 +1,3 @@
+<launch>
+  <node name="not_thread_safe" pkg="haros_lib_examples" type="not_thread_safe" output="screen" />
+</launch>

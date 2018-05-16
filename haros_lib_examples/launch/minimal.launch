@@ -1,0 +1,4 @@
+<launch>
+  <node name="listener" pkg="haros_lib_examples" type="subscriber" output="screen" />
+  <node name="talker" pkg="haros_lib_examples" type="publisher" output="screen" />
+</launch>
